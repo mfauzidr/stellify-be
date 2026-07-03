@@ -1,22 +1,6 @@
 import { Knex } from "knex";
 
 export async function up(knex: Knex): Promise<void> {
-  await knex.raw(`
-    CREATE TYPE payment_order_type AS ENUM (
-      'cheki',
-      'product'
-    );
-  `);
-
-  await knex.raw(`
-    CREATE TYPE payment_status AS ENUM (
-      'pending',
-      'paid',
-      'expired',
-      'cancelled',
-      'failed'
-    );
-  `);
 
   await knex.schema.createTable("payments", (table) => {
     table.bigIncrements("id").primary();
@@ -80,7 +64,7 @@ export async function up(knex: Knex): Promise<void> {
       .defaultTo(knex.fn.now());
 
     table.index(["order_type"]);
-    table.index(["reference_uuid"]);
+    table.index(["order_uuid"]);
     table.index(["transaction_id"]);
   });
 }
@@ -93,6 +77,6 @@ export async function down(knex: Knex): Promise<void> {
   `);
 
   await knex.raw(`
-    DROP TYPE IF EXISTS payment_reference_type;
+    DROP TYPE IF EXISTS payment_order_type;
   `);
 }

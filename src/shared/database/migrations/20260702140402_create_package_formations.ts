@@ -1,12 +1,6 @@
 import { Knex } from "knex";
 
 export async function up(knex: Knex): Promise<void> {
-  await knex.raw(`
-    CREATE TYPE cheki_package_status AS ENUM (
-      'active',
-      'inactive'
-    );
-  `);
 
   await knex.schema.createTable("cheki_packages", (table) => {
     table.bigIncrements("id").primary();

@@ -1,14 +1,6 @@
 import { Knex } from "knex";
 
 export async function up(knex: Knex): Promise<void> {
-  await knex.raw(`
-    CREATE TYPE event_status AS ENUM (
-      'draft',
-      'published',
-      'finished',
-      'cancelled'
-    );
-  `);
 
   await knex.schema.createTable("events", (table) => {
     table.bigIncrements("id").primary();

@@ -1,12 +1,6 @@
 import { Knex } from "knex";
 
 export async function up(knex: Knex): Promise<void> {
-  await knex.raw(`
-    CREATE TYPE formation_type AS ENUM (
-      'single',
-      'group'
-    );
-  `);
 
   await knex.schema.createTable("order_items", (table) => {
     table.bigIncrements("id").primary();

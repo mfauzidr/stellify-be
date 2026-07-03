@@ -1,15 +1,6 @@
 import { Knex } from "knex";
 
 export async function up(knex: Knex): Promise<void> {
-  await knex.raw(`
-    CREATE TYPE product_order_status AS ENUM (
-      'pending',
-      'paid',
-      'completed',
-      'cancelled',
-      'expired'
-    );
-  `);
 
   await knex.schema.createTable("product_orders", (table) => {
     table.bigIncrements("id").primary();
