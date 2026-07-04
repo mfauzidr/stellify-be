@@ -7,7 +7,7 @@ dotenv.config({ path: envPath, override: true });
 import express, { Request, Response } from "express";
 import morgan from "morgan"
 import cors, { CorsOptions } from "cors";
-import router from "./src/shared/routes/";
+import router from "./src/shared/routes/index";
 
 const app = express();
 

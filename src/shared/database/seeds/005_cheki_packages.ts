@@ -11,11 +11,9 @@ export async function seed(knex: Knex): Promise<void> {
     {
       event_uuid: event.uuid,
       title: "Regular Cheki",
-      description: "Standard cheki package.",
       image: "https://placehold.co/500x500",
       price_single: 30000,
       price_group: 45000,
-      max_members: 5,
       status: "active",
     },
   ]);
