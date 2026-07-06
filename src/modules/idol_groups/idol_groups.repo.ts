@@ -40,4 +40,34 @@ export const insert = async (data: IIdolGroupsBody): Promise<IIdolGroups[]> => {
     return result.rows;
 }  
 
-    
+export const update = async (uuid: string, data: Partial<IIdolGroupsBody>): Promise<IIdolGroups[]> => {
+    const columns: QueryValue[] = [];
+    const values: QueryValue[] = [uuid];
+    for (const [key, value] of Object.entries(data)) {
+        values.push(value);
+        columns.push(`"${key}" = $${values.length}`);
+    }
+
+    console.log("values :", values);
+
+    const query = `
+        UPDATE "idol_groups"
+        SET ${columns.join(", ")},
+        updated_at = now()
+        WHERE uuid = $1
+        RETURNING *
+    `;
+
+    const result: QueryResult<IIdolGroups> = await db.query(query, values);
+    return result.rows;
+};
+
+export const remove = async (uuid: string): Promise<IIdolGroups[]> => {
+    const query = `
+        DELETE FROM "idol_groups"
+        WHERE uuid = $1
+        RETURNING *
+    `;
+    const result: QueryResult<IIdolGroups> = await db.query(query, [uuid]);
+    return result.rows;
+}

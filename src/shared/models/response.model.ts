@@ -1,4 +1,5 @@
 import { IIdolGroups } from "src/modules/idol_groups/idol_groups.model";
+import { IMembers } from "src/modules/members/members.model";
 
 interface IPaginationMeta {
   totalData?: number;
@@ -18,6 +19,10 @@ interface IBasicResponse {
 
 export interface IIdolGroupsResponse extends IBasicResponse {
   results?: IIdolGroups[];
+}
+
+export interface IMemberResponse extends IBasicResponse {
+  results?: IMembers[];
 }
 
 export interface IErrResponse {

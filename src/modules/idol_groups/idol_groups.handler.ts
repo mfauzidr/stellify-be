@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { IIdolGroupsBody, IIdolGroupsParams } from "./idol_groups.model";
 import { IIdolGroupsResponse } from "../../shared/models/response.model";
-import { findAll, findByUuid, insert } from "./idol_groups.repo";
+import { findAll, findByUuid, insert, update, remove } from "./idol_groups.repo";
 import { AppError } from "src/shared/helper/appError";
 
 
@@ -51,5 +51,44 @@ export const createIdolGroup = async (
         success: true,
         message: "Idol group created successfully",
         results: newIdolGroup,
+    });
+}
+
+export const updateIdolGroup = async (
+    req: Request<{uuid: string}, {}, IIdolGroupsBody>,
+    res: Response<IIdolGroupsResponse>
+): Promise<Response> => {
+    const { uuid } = req.params;
+
+    if (!uuid || uuid === ":uuid") {
+        throw new AppError("NO_ID", "UUID must be provided", 400);
+    }
+
+    const data: Partial<IIdolGroupsBody> = {...req.body};
+
+    console.log("data :", data);
+
+    const updatedIdolGroup = await update(uuid, data);
+    return res.status(200).json({
+        success: true,
+        message: "Idol group updated successfully",
+        results: updatedIdolGroup,
+    });
+}
+
+export const deleteIdolGroup = async (
+    req: Request<{uuid: string}>,
+    res: Response<IIdolGroupsResponse>
+): Promise<Response> => {
+    const { uuid } = req.params;
+    if (!uuid || uuid === ":uuid") {
+        throw new AppError("NO_ID", "UUID must be provided", 400);
+    }
+
+    const deletedIdolGroup = await remove(uuid);
+    return res.status(200).json({
+        success: true,
+        message: "Idol group deleted successfully",
+        results: deletedIdolGroup,
     });
 }

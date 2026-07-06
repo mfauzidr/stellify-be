@@ -21,7 +21,7 @@ export interface IIdolGroupsParams {
 
 export interface IIdolGroupsBody {
     name: string;
-    jiko: string;
+    jiko?: string;
     description?: string;
     logo?: string;
     banner?: string;
