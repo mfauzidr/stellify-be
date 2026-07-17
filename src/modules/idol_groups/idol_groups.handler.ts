@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { IIdolGroupsBody, IIdolGroupsParams } from "./idol_groups.model";
 import { IIdolGroupsResponse } from "../../shared/models/response.model";
-import { findAll, findByUuid, insert, update, remove } from "./idol_groups.repo";
+import { findAll, findByUuid, insert, update, remove, setActiveStatus } from "./idol_groups.repo";
 import { AppError } from "src/shared/helper/appError";
 
 
@@ -90,5 +90,47 @@ export const deleteIdolGroup = async (
         success: true,
         message: "Idol group deleted successfully",
         results: deletedIdolGroup,
+    });
+}
+
+export const deactivateIdolGroup = async (
+    req: Request<{uuid: string}>,
+    res: Response<IIdolGroupsResponse>
+): Promise<Response> => {
+    const { uuid } = req.params;
+    if (!uuid || uuid === ":uuid") {
+        throw new AppError("NO_ID", "UUID must be provided", 400);
+    }
+
+    const result = await setActiveStatus(uuid, false);
+    if (result.length < 1) {
+        throw new AppError("NO_DATA", "No Data Found", 404);
+    }
+
+    return res.status(200).json({
+        success: true,
+        message: "Idol group deactivated successfully",
+        results: result,
+    });
+}
+
+export const restoreIdolGroup = async (
+    req: Request<{uuid: string}>,
+    res: Response<IIdolGroupsResponse>
+): Promise<Response> => {
+    const { uuid } = req.params;
+    if (!uuid || uuid === ":uuid") {
+        throw new AppError("NO_ID", "UUID must be provided", 400);
+    }
+
+    const result = await setActiveStatus(uuid, true);
+    if (result.length < 1) {
+        throw new AppError("NO_DATA", "No Data Found", 404);
+    }
+
+    return res.status(200).json({
+        success: true,
+        message: "Idol group restored successfully",
+        results: result,
     });
 }

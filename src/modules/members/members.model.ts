@@ -1,8 +1,9 @@
 export interface IMembers extends IMemberBody {
   id: number;
   uuid: string;
-  createdAt: Date;
-  updatedAt?: Date;
+  created_at: Date;
+  updated_at?: Date;
+  deleted_at?: Date;
 }
 
 export interface IMemberParams {

@@ -1,34 +1,32 @@
-import { QueryResult } from "pg"
-import db from "../../shared/config/pg"
+import { QueryResult } from "pg";
+import db from "../../shared/config/pg";
 import { IIdolGroups, IIdolGroupsBody } from "./idol_groups.model";
 
 type QueryValue = string | number | Date | null;
 
 export const findAll = async (): Promise<IIdolGroups[]> => {
-    const query = `SELECT * FROM "idol_groups"`;
-    const result: QueryResult<IIdolGroups> = await db.query(query);
-    return result.rows;
-}
+  const query = `SELECT * FROM "idol_groups"`;
+  const result: QueryResult<IIdolGroups> = await db.query(query);
+  return result.rows;
+};
 
 export const findByUuid = async (uuid: string): Promise<IIdolGroups[]> => {
-    const query = `SELECT * FROM "idol_groups" WHERE uuid = $1`;
-    const result: QueryResult<IIdolGroups> = await db.query(query, [uuid]);
-    return result.rows;
-}
+  const query = `SELECT * FROM "idol_groups" WHERE uuid = $1`;
+  const result: QueryResult<IIdolGroups> = await db.query(query, [uuid]);
+  return result.rows;
+};
 
 export const insert = async (data: IIdolGroupsBody): Promise<IIdolGroups[]> => {
-    const columns: QueryValue[] = [];
-    const values: QueryValue[] = [];
-    for (const [key, value] of Object.entries(data)) {
-        values.push(value);
-        columns.push(`"${key}"`);
-    }
+  const columns: QueryValue[] = [];
+  const values: QueryValue[] = [];
+  for (const [key, value] of Object.entries(data)) {
+    values.push(value);
+    columns.push(`"${key}"`);
+  }
 
-    const insertedValues = values
-        .map((_, index) => `$${index + 1}`)
-        .join(", ");
+  const insertedValues = values.map((_, index) => `$${index + 1}`).join(", ");
 
-    const query = `
+  const query = `
         INSERT INTO "idol_groups"
         (${columns.join(", ")})
         VALUES
@@ -36,21 +34,24 @@ export const insert = async (data: IIdolGroupsBody): Promise<IIdolGroups[]> => {
         RETURNING *
     `;
 
-    const result: QueryResult<IIdolGroups> = await db.query(query, values);
-    return result.rows;
-}  
+  const result: QueryResult<IIdolGroups> = await db.query(query, values);
+  return result.rows;
+};
 
-export const update = async (uuid: string, data: Partial<IIdolGroupsBody>): Promise<IIdolGroups[]> => {
-    const columns: QueryValue[] = [];
-    const values: QueryValue[] = [uuid];
-    for (const [key, value] of Object.entries(data)) {
-        values.push(value);
-        columns.push(`"${key}" = $${values.length}`);
-    }
+export const update = async (
+  uuid: string,
+  data: Partial<IIdolGroupsBody>,
+): Promise<IIdolGroups[]> => {
+  const columns: QueryValue[] = [];
+  const values: QueryValue[] = [uuid];
+  for (const [key, value] of Object.entries(data)) {
+    values.push(value);
+    columns.push(`"${key}" = $${values.length}`);
+  }
 
-    console.log("values :", values);
+  console.log("values :", values);
 
-    const query = `
+  const query = `
         UPDATE "idol_groups"
         SET ${columns.join(", ")},
         updated_at = now()
@@ -58,16 +59,36 @@ export const update = async (uuid: string, data: Partial<IIdolGroupsBody>): Prom
         RETURNING *
     `;
 
-    const result: QueryResult<IIdolGroups> = await db.query(query, values);
-    return result.rows;
+  const result: QueryResult<IIdolGroups> = await db.query(query, values);
+  return result.rows;
 };
 
 export const remove = async (uuid: string): Promise<IIdolGroups[]> => {
-    const query = `
+  const query = `
         DELETE FROM "idol_groups"
         WHERE uuid = $1
         RETURNING *
     `;
-    const result: QueryResult<IIdolGroups> = await db.query(query, [uuid]);
-    return result.rows;
-}
+  const result: QueryResult<IIdolGroups> = await db.query(query, [uuid]);
+  return result.rows;
+};
+
+export const setActiveStatus = async (
+  uuid: string,
+  status: boolean,
+): Promise<IIdolGroups[]> => {
+  let deleteClause = status ? ", deleted_at = NULL" : ", deleted_at = NOW()";
+
+  const query = `
+    UPDATE "idol_groups"
+    SET "is_active" = $2 ${deleteClause}
+    WHERE uuid = $1
+    RETURNING *
+`;
+
+  const result: QueryResult<IIdolGroups> = await db.query(query, [
+    uuid,
+    status,
+  ]);
+  return result.rows;
+};

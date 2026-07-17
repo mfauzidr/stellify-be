@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { AppError } from "../../shared/helper/appError";
 import { IMemberBody, IMemberQueryParams } from "./members.model";
 import { IMemberResponse } from "src/shared/models/response.model";
-import { findAll, findDetails, insert, remove, update } from "./members.repo";
+import { findAll, findDetails, insert, remove, setActiveStatus, update } from "./members.repo";
 
 export const getAllMembers = async (
   req: Request<{}, {}, {}, IMemberQueryParams>,
@@ -111,3 +111,46 @@ export const deleteMember = async (
         message: `Member with uuid ${uuid} deleted successfully`,
     });
 };
+
+
+export const deactivateMember = async (
+    req: Request<{ uuid: string }>,
+    res: Response<IMemberResponse>,
+): Promise<Response> => {
+    const { uuid } = req.params;
+    if (!uuid || uuid === ":uuid") {
+        throw new AppError("NO_ID", "UUID must be provided", 400);
+    }
+
+    const result = await setActiveStatus (uuid, false);
+    if (result.length < 1) {
+        throw new AppError("NOT_FOUND", "Member not found", 404);
+    }
+
+    return res.status(200).json({
+        success: true,
+        message: "Member deactivated",
+        results: result,
+    });
+}
+
+export const restoreMember = async (
+    req: Request<{ uuid: string }>,
+    res: Response<IMemberResponse>,
+): Promise<Response> => {
+    const { uuid } = req.params;
+    if (!uuid || uuid === ":uuid") {
+        throw new AppError("NO_ID", "UUID must be provided", 400);
+    }
+
+    const result = await setActiveStatus (uuid, true);
+    if (result.length < 1) {
+        throw new AppError("NOT_FOUND", "Member not found", 404);
+    }
+
+    return res.status(200).json({
+        success: true,
+        message: "Member restored",
+        results: result,
+    });
+}

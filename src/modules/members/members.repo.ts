@@ -2,7 +2,7 @@ import { QueryResult } from "pg";
 import db from "../../shared/config/pg";
 import { IMembers, IMemberQueryParams, IMemberBody } from "./members.model";
 
-type QueryValue = string | number | Date | null;
+type QueryValue = string | number | Date | null | boolean;
 
 export const findAll = async ({
     idol_group_uuid = "",
@@ -131,6 +131,21 @@ export const remove = async (uuid: string): Promise<IMembers[]> => {
         RETURNING *
     `;
     const values: QueryValue[] = [uuid];
+    const result: QueryResult<IMembers> = await db.query(query, values);
+    return result.rows;
+}
+
+export const setActiveStatus = async (uuid: string, status: boolean): Promise<IMembers[]> => {
+    const values: QueryValue[] = [uuid, status];
+    const deletedAtClause = status ? ", deleted_at = NULL" : ", deleted_at = NOW()";
+
+    const query = `
+        UPDATE "members"
+        SET "is_active" = $2 ${deletedAtClause}
+        WHERE "uuid" = $1
+        RETURNING *
+    `;
+
     const result: QueryResult<IMembers> = await db.query(query, values);
     return result.rows;
 }
