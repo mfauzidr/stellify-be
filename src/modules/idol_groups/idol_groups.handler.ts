@@ -40,11 +40,10 @@ export const getIdolGroupByUuid = async (req: Request<IIdolGroupsParams>, res: R
 export const createIdolGroup = async (
     req: Request<{}, {}, IIdolGroupsBody>, 
     res: Response<IIdolGroupsResponse>, 
-) => {
+): Promise<Response> => {
     if (!req.body.name) {
         throw new AppError("NO_NAME", "Name must be provided", 400);
-    }   
-    console.log("name :" , req.body.name);
+    }
 
     const newIdolGroup = await insert(req.body);
     return res.status(201).json({

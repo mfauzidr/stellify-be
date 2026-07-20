@@ -16,6 +16,7 @@ export interface IMemberQueryParams {
     member_status?: string;
     generation?: number;
     idol_group_uuid?: string;
+    is_active?: boolean
 }
 
 export interface IMemberBody {

@@ -5,11 +5,13 @@ import membersRouter from "src/modules/members/members.router";
 
 import { globalErrorHandler } from "../../middlewares/error.middlwware";
 import { requestLogger } from "../../middlewares/requestLogger.middleware";
+import eventsRouter from "src/modules/events/events.router";
 
 const router = Router();
 
 router.use("/idol-groups", idolGroupsRouter);
 router.use("/members", membersRouter);
+router.use("/events", eventsRouter)
 
 router.use(requestLogger);
 router.use(globalErrorHandler);

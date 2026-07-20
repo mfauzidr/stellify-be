@@ -1,4 +1,4 @@
-export interface IIdolGroups {
+export interface IIdolGroups extends IIdolGroupsBody {
     id: number;
     uuid: string;
     name: string;

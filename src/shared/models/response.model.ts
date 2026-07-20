@@ -1,3 +1,4 @@
+import { IEvents } from "src/modules/events/events.model";
 import { IIdolGroups } from "src/modules/idol_groups/idol_groups.model";
 import { IMembers } from "src/modules/members/members.model";
 
@@ -23,6 +24,10 @@ export interface IIdolGroupsResponse extends IBasicResponse {
 
 export interface IMemberResponse extends IBasicResponse {
   results?: IMembers[];
+}
+
+export interface IEventsResponse extends IBasicResponse {
+  results?: IEvents[];
 }
 
 export interface IErrResponse {

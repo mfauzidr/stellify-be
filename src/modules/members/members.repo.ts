@@ -9,6 +9,7 @@ export const findAll = async ({
     name = "",
     member_status = "",
     generation,
+    is_active,
 }: IMemberQueryParams): Promise<IMembers[]> => {
     let values: QueryValue[] = [];
     let conditions: string[] = [];
@@ -34,8 +35,13 @@ export const findAll = async ({
         values.push(generation);
     }
 
+    if (is_active !== undefined) {
+    conditions.push(`"m"."is_active" = $${values.length + 1}`);
+    values.push(is_active);
+    }
+
     if (conditions.length > 0) {
-        whereQuery = `WHERE ` + conditions.join(" AND ");
+    whereQuery = `WHERE ${conditions.join(" AND ")}`;
     }
 
     const query = `
@@ -49,8 +55,10 @@ export const findAll = async ({
             "m"."image",
             "m"."generation",
             "m"."member_status",
+            "m". "is_active",
             "m"."created_at",
-            "m"."updated_at"
+            "m"."updated_at",
+            "m"."deleted_at"
         FROM "members" AS "m"
         LEFT JOIN "idol_groups" AS "ig" ON "m"."idol_group_uuid" = "ig"."uuid"
         ${whereQuery}

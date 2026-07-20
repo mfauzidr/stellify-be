@@ -5,7 +5,7 @@ import { IIdolGroups, IIdolGroupsBody } from "./idol_groups.model";
 type QueryValue = string | number | Date | null;
 
 export const findAll = async (): Promise<IIdolGroups[]> => {
-  const query = `SELECT * FROM "idol_groups"`;
+  const query = `SELECT * FROM "idol_groups" WHERE "is_active" = true`;
   const result: QueryResult<IIdolGroups> = await db.query(query);
   return result.rows;
 };
@@ -48,8 +48,6 @@ export const update = async (
     values.push(value);
     columns.push(`"${key}" = $${values.length}`);
   }
-
-  console.log("values :", values);
 
   const query = `
         UPDATE "idol_groups"

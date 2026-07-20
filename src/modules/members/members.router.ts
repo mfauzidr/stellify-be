@@ -9,6 +9,6 @@ membersRouter.get("/:uuid", getDetailMember);
 membersRouter.post("/", createMember);
 membersRouter.patch("/:uuid", updateMember);
 membersRouter.delete("/:uuid", deleteMember);
-membersRouter.patch("/:uuid/deactivate", deactivateMember);
-membersRouter.patch("/:uuid/restore", restoreMember);
+membersRouter.patch("/deactivate/:uuid", deactivateMember);
+membersRouter.patch("/restore/:uuid", restoreMember);
 export default membersRouter;
