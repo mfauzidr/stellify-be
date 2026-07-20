@@ -1,3 +1,4 @@
+import { ICheki } from "src/modules/cheki/cheki.models";
 import { IEvents } from "src/modules/events/events.model";
 import { IIdolGroups } from "src/modules/idol_groups/idol_groups.model";
 import { IMembers } from "src/modules/members/members.model";
@@ -28,6 +29,10 @@ export interface IMemberResponse extends IBasicResponse {
 
 export interface IEventsResponse extends IBasicResponse {
   results?: IEvents[];
+}
+
+export interface IChekiResponse extends IBasicResponse {
+  results?: ICheki[]
 }
 
 export interface IErrResponse {

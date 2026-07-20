@@ -8,7 +8,7 @@ idolGroupsRouter.get("/:uuid", getIdolGroupByUuid);
 idolGroupsRouter.post("/", createIdolGroup);
 idolGroupsRouter.patch("/:uuid", updateIdolGroup);
 idolGroupsRouter.delete("/:uuid", deleteIdolGroup);
-idolGroupsRouter.patch("/:uuid/deactivate", deactivateIdolGroup);
-idolGroupsRouter.patch("/:uuid/restore", restoreIdolGroup);
+idolGroupsRouter.patch("/deactivate/:uuid", deactivateIdolGroup);
+idolGroupsRouter.patch("/restore/:uuid", restoreIdolGroup);
 
 export default idolGroupsRouter;

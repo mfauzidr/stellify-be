@@ -1,136 +1,182 @@
 import { Request, Response } from "express";
 import { AppError } from "src/shared/helper/appError";
 import { IEventsResponse } from "src/shared/models/response.model";
-import { findAll, findByUuid, insert, remove, setActiveStatus, update } from "./events.repo";
-import { IEventsBody, IEventsParams } from "./events.model";
+import {
+  findAll,
+  findByUuid,
+  insert,
+  remove,
+  setActiveStatus,
+  update,
+} from "./events.repo";
+import {
+  IEventRequest,
+  IEventsBody,
+  IEventsParams,
+} from "./events.model";
 
-export const getAllEvents = async (req: Request, res: Response<IEventsResponse>): Promise<Response> => {
-    const events = await findAll();
-    if (events.length < 1){
-        throw new AppError("NO_DATA", "No Data Found", 404)
-    }
+const parseMemberUuids = (
+  member_uuids?: string | string[],
+): string[] | undefined => {
+  if (!member_uuids) return undefined;
 
-    return res.status(200).json({
-        success: true,
-        message: `List all events. ${events.length} data found`,
-        results: events
-    })
-}
+  if (Array.isArray(member_uuids)) {
+    return member_uuids;
+  }
 
-export const getEventsByUuid = async (req: Request<IEventsParams>, res: Response<IEventsResponse>): Promise<Response> => {
-    const { uuid } = req.params;
+  return member_uuids
+    .split(",")
+    .map((uuid) => uuid.trim())
+    .filter(Boolean);
+};
 
-    if (!uuid || uuid === ":uuid") {
-        throw new AppError("NO_ID", "UUID must be provided", 400);
-    }
+export const getAllEvents = async (
+  req: Request,
+  res: Response<IEventsResponse>,
+): Promise<Response> => {
+  const events = await findAll();
+  if (events.length < 1) {
+    throw new AppError("NO_DATA", "No Data Found", 404);
+  }
 
-    const events = await findByUuid(uuid);
-    if (events.length < 1) {
-        throw new AppError("NO_DATA", "No Data Found", 404);
-    }
+  return res.status(200).json({
+    success: true,
+    message: `List all events. ${events.length} data found`,
+    results: events,
+  });
+};
 
-    return res.status(200).json({
-        success: true,
-        message: `Event with UUID ${uuid} found`,
-        results: events,
-    });
-}
+export const getEventsByUuid = async (
+  req: Request<IEventsParams>,
+  res: Response<IEventsResponse>,
+): Promise<Response> => {
+  const { uuid } = req.params;
 
-export const createEvents = async (req: Request<{},{}, IEventsBody>, res: Response<IEventsResponse>,): Promise<Response> => {
-    if (!req.body.idol_group_uuid) {
-        throw new AppError("NO_ID", "Event UUID must be provided", 400)
-    }
+  if (!uuid || uuid === ":uuid") {
+    throw new AppError("NO_ID", "UUID must be provided", 400);
+  }
 
-    if (!req.body.title) {
-        throw new AppError("NO_NAME", "Event title must be provided", 400)
-    }
-    if (!req.body.event_date) {
-        throw new AppError("NO_DATE", "Event date must be provided", 400)
-    }
+  const events = await findByUuid(uuid);
+  if (events.length < 1) {
+    throw new AppError("NO_DATA", "No Data Found", 404);
+  }
 
-    const newEvents = await insert(req.body)
-    return res.status(200).json({
-        success: true,
-        message: "Event created successfully",
-        results: newEvents,
-    })
-}
+  return res.status(200).json({
+    success: true,
+    message: `Event with UUID ${uuid} found`,
+    results: events,
+  });
+};
+
+export const createEvents = async (
+  req: Request<{}, {}, IEventRequest>,
+  res: Response<IEventsResponse>,
+): Promise<Response> => {
+  const body: IEventsBody = {
+    ...req.body,
+    member_uuids: req.body.member_uuids.split(",").map((x) => x.trim()),
+  };
+
+  if (body.member_uuids.length < 1) {
+    throw new AppError("NO_MEMBER", "At least one member must be selected", 400)
+  }
+
+  if (!req.body.idol_group_uuid) {
+    throw new AppError("NO_ID", "Event UUID must be provided", 400);
+  }
+  if (!req.body.title) {
+    throw new AppError("NO_NAME", "Event title must be provided", 400);
+  }
+  if (!req.body.event_date) {
+    throw new AppError("NO_DATE", "Event date must be provided", 400);
+  }
+
+  const newEvents = await insert(body);
+  return res.status(200).json({
+    success: true,
+    message: "Event created successfully",
+    results: newEvents,
+  });
+};
 
 export const updateEvent = async (
-    req: Request<{uuid: string}, {}, IEventsBody>,
-    res: Response<IEventsResponse>
+  req: Request<{ uuid: string }, {}, IEventRequest>,
+  res: Response<IEventsResponse>,
 ): Promise<Response> => {
-    const { uuid } = req.params;
+  const { uuid } = req.params;
 
-    if (!uuid || uuid === ":uuid") {
-        throw new AppError("NO_ID", "UUID must be provided", 400);
-    }
+  if (!uuid || uuid === ":uuid") {
+    throw new AppError("NO_ID", "UUID must be provided", 400);
+  }
 
-    const data: Partial<IEventsBody> = {...req.body};
+  const data: Partial<IEventsBody> = {
+  ...req.body,
+  member_uuids: parseMemberUuids(req.body.member_uuids),
+};
 
-    const updatedEvent = await update(uuid, data);
-    return res.status(200).json({
-        success: true,
-        message: "Event updated successfully",
-        results: updatedEvent,
-    });
-}
+  const updatedEvent = await update(uuid, data);
+  return res.status(200).json({
+    success: true,
+    message: "Event updated successfully",
+    results: updatedEvent,
+  });
+};
 
 export const deleteEvent = async (
-    req: Request<{uuid: string}>,
-    res: Response<IEventsResponse>
+  req: Request<{ uuid: string }>,
+  res: Response<IEventsResponse>,
 ): Promise<Response> => {
-    const { uuid } = req.params;
-    if (!uuid || uuid === ":uuid") {
-        throw new AppError("NO_ID", "UUID must be provided", 400);
-    }
+  const { uuid } = req.params;
+  if (!uuid || uuid === ":uuid") {
+    throw new AppError("NO_ID", "UUID must be provided", 400);
+  }
 
-    const deletedEvent = await remove(uuid);
-    return res.status(200).json({
-        success: true,
-        message: "Event deleted successfully",
-        results: deletedEvent,
-    });
-}
+  const deletedEvent = await remove(uuid);
+  return res.status(200).json({
+    success: true,
+    message: "Event deleted successfully",
+    results: deletedEvent,
+  });
+};
 
 export const deactivateEvent = async (
-    req: Request<{uuid: string}>,
-    res: Response<IEventsResponse>
+  req: Request<{ uuid: string }>,
+  res: Response<IEventsResponse>,
 ): Promise<Response> => {
-    const { uuid } = req.params;
-    if (!uuid || uuid === ":uuid") {
-        throw new AppError("NO_ID", "UUID must be provided", 400);
-    }
+  const { uuid } = req.params;
+  if (!uuid || uuid === ":uuid") {
+    throw new AppError("NO_ID", "UUID must be provided", 400);
+  }
 
-    const result = await setActiveStatus(uuid, false);
-    if (result.length < 1) {
-        throw new AppError("NO_DATA", "No Data Found", 404);
-    }
+  const result = await setActiveStatus(uuid, false);
+  if (result.length < 1) {
+    throw new AppError("NO_DATA", "No Data Found", 404);
+  }
 
-    return res.status(200).json({
-        success: true,
-        message: "Event deactivated successfully",
-        results: result,
-    });
-}
+  return res.status(200).json({
+    success: true,
+    message: "Event deactivated successfully",
+    results: result,
+  });
+};
 
 export const restoreEvent = async (
-    req: Request<{uuid: string}>,
-    res: Response<IEventsResponse>
+  req: Request<{ uuid: string }>,
+  res: Response<IEventsResponse>,
 ): Promise<Response> => {
-    const { uuid } = req.params;
-    if (!uuid || uuid === ":uuid") {
-        throw new AppError("NO_ID", "UUID must be provided", 400);
-    }
+  const { uuid } = req.params;
+  if (!uuid || uuid === ":uuid") {
+    throw new AppError("NO_ID", "UUID must be provided", 400);
+  }
 
-    const result = await setActiveStatus(uuid, true);
-    if (result.length < 1) {
-        throw new AppError("NO_DATA", "No Data Found", 404);
-    }
+  const result = await setActiveStatus(uuid, true);
+  if (result.length < 1) {
+    throw new AppError("NO_DATA", "No Data Found", 404);
+  }
 
-    return res.status(200).json({
-        success: true,
-        message: "Event restored successfully",
-        results: result,
-    });
-}
+  return res.status(200).json({
+    success: true,
+    message: "Event restored successfully",
+    results: result,
+  });
+};

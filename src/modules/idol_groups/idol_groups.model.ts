@@ -3,6 +3,7 @@ export interface IIdolGroups extends IIdolGroupsBody {
     uuid: string;
     name: string;
     created_at: Date;
+    is_active?: boolean
     updated_at?: Date;
     deleted_at?: Date;
 }
