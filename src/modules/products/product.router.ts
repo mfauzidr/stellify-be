@@ -9,13 +9,24 @@ import {
   updateProduct,
 } from "./product.handler";
 import { authMiddleware } from "src/middlewares/auth.middleware";
+import { singleUploader } from "src/middlewares/upload.middleware";
 
 const productsRouter = Router();
 
 productsRouter.get("/", getAllProducts);
 productsRouter.get("/:uuid", getDetailProduct);
-productsRouter.post("/", authMiddleware(["admin"]), createProduct);
-productsRouter.patch("/:uuid", authMiddleware(["admin"]), updateProduct);
+productsRouter.post(
+  "/",
+  authMiddleware(["admin"]),
+  singleUploader("image"),
+  createProduct,
+);
+productsRouter.patch(
+  "/:uuid",
+  authMiddleware(["admin"]),
+  singleUploader("image"),
+  updateProduct,
+);
 productsRouter.delete("/:uuid", authMiddleware(["admin"]), deleteProducts);
 productsRouter.patch(
   "/deactivate/:uuid",

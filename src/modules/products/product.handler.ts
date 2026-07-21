@@ -1,13 +1,27 @@
 import { Request, Response } from "express";
 import paginLink from "src/shared/helper/paginLinks";
 import { AppError } from "src/shared/helper/appError";
-import { IProductParams, IProductQueryParams, IProducts, IProductsBody } from "./product.model";
+import {
+  IProductParams,
+  IProductQueryParams,
+  IProducts,
+  IProductsBody,
+} from "./product.model";
 import { IProductResponse } from "src/shared/models/response.model";
-import { deleteProduct, findAll, findDetails, insert, setActiveProducts, totalCount, update } from "./product.repo";
+import {
+  deleteProduct,
+  findAll,
+  findDetails,
+  insert,
+  setActiveProducts,
+  totalCount,
+  update,
+} from "./product.repo";
+import { cloudinaryUploader } from "src/shared/helper/courdinary";
 
 export const getAllProducts = async (
   req: Request<{}, {}, {}, IProductQueryParams>,
-  res: Response<IProductResponse>
+  res: Response<IProductResponse>,
 ) => {
   const query = req.query;
   const products = await findAll(query);
@@ -37,7 +51,7 @@ export const getAllProducts = async (
 
 export const getDetailProduct = async (
   req: Request<IProducts>,
-  res: Response<IProductResponse>
+  res: Response<IProductResponse>,
 ): Promise<Response> => {
   const { uuid } = req.params;
   const product = await findDetails(uuid);
@@ -53,76 +67,57 @@ export const getDetailProduct = async (
 
 export const createProduct = async (
   req: Request<{}, {}, IProductsBody>,
-  res: Response<IProductResponse>
+  res: Response<IProductResponse>,
 ): Promise<Response> => {
-    const price = Number(req.body.price);
+  const price = Number(req.body.price);
 
-    const productData = {
-      name: req.body.name,
-      member_uuid: req.body.member_uuid,
-      price,
-      stock: req.body.stock,
-    };
-    const product = await insert(productData);
-    // const productUuid = product[0].uuid;
-    
+  const productData = {
+    name: req.body.name,
+    member_uuid: req.body.member_uuid,
+    price,
+    stock: req.body.stock,
+  };
+  const product = await insert(productData);
+  const productUuid = product[0].uuid;
 
-    // if (req.files && Array.isArray(req.files)) {
-    //   const uploadResults: string[] = [];
+  if (req.file) {
+    const uploadResult = await cloudinaryUploader(
+      req.file,
+      "products",
+      productUuid,
+    );
 
-    //   for (const [index, file] of (
-    //     req.files as Express.Multer.File[]
-    //   ).entries()) {
-    //     const fakeReq = { file } as Request;
+    if (uploadResult.error) {
+      throw new AppError("UPLOAD_FAILED", "Failed to upload image", 400);
+    }
+    const imageUrl = uploadResult.result?.secure_url;
+    await update(productUuid, { image: imageUrl });
+  }
 
-    //     const uploadResult = await cloudinaryUploader(
-    //       fakeReq,
-    //       "product",
-    //       productUuid
-    //     );
-
-    //     if (uploadResult.error) {
-    //       throw new AppError("UPLOAD_FAILED", "Failed to upload image", 400);
-    //     }
-
-    //     if (uploadResult.result?.secure_url) {
-    //       uploadResults.push(uploadResult.result.secure_url);
-    //       await insertProductImage({
-    //         productUuid,
-    //         imageUrl: uploadResult.result.secure_url,
-    //         isPrimary: index === primaryImageIndex,
-    //         orderIndex: index + 1,
-    //       });
-    //     }
-    //   }
-    // }
-
-    return res.json({
-      success: true,
-      message: "Create product successfully",
-      results: product,
-    });
+  return res.json({
+    success: true,
+    message: "Create product successfully",
+    results: product,
+  });
 };
 
 export const updateProduct = async (
   req: Request<{ uuid: string }, {}, IProductsBody>,
   res: Response<IProductResponse>,
 ): Promise<Response> => {
-  const { uuid } = req.params
+  const { uuid } = req.params;
 
   const data: Partial<IProductsBody> = { ...req.body };
 
-  
+  if (req.file) {
+    const uploadResult = await cloudinaryUploader(req.file, "products", uuid);
 
-//   if (req.file) {
-//     const uploadResult = await cloudinaryUploader(req, "user", uuid);
-
-//     if (uploadResult.error) {
-//       throw new AppError("UPLOAD_FAILED", "Failed to upload image", 400);
-//     }
-//     const imageUrl = uploadResult.result?.secure_url;
-//     data.image = imageUrl;
-//   }
+    if (uploadResult.error) {
+      throw new AppError("UPLOAD_FAILED", "Failed to upload image", 400);
+    }
+    const imageUrl = uploadResult.result?.secure_url;
+    data.image = imageUrl;
+  }
 
   const products = await update(uuid, data);
   if (products.length < 1) {
@@ -137,7 +132,7 @@ export const updateProduct = async (
 
 export const deleteProducts = async (
   req: Request<IProductParams>,
-  res: Response<IProductResponse>
+  res: Response<IProductResponse>,
 ): Promise<Response> => {
   const { uuid } = req.params;
 

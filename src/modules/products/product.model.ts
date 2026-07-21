@@ -2,6 +2,7 @@
 export interface IProductsBody {
     member_uuid:string
     name:string
+    image?: string
     price:number
     stock:number
 }
@@ -9,7 +10,6 @@ export interface IProductsBody {
 export interface IProducts extends IProductsBody {
     id: number
     uuid: string
-    image?: string
     is_active?: boolean
     created_at?:Date
     updated_at?:Date

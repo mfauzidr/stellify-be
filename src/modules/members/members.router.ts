@@ -9,13 +9,24 @@ import {
   updateMember,
 } from "./members.handler";
 import { authMiddleware } from "src/middlewares/auth.middleware";
+import { singleUploader } from "src/middlewares/upload.middleware";
 
 const membersRouter = Router();
 
 membersRouter.get("/", getAllMembers);
 membersRouter.get("/:uuid", getDetailMember);
-membersRouter.post("/", authMiddleware(["admin"]), createMember);
-membersRouter.patch("/:uuid", authMiddleware(["admin"]), updateMember);
+membersRouter.post(
+  "/",
+  authMiddleware(["admin"]),
+  singleUploader("image"),
+  createMember,
+);
+membersRouter.patch(
+  "/:uuid",
+  authMiddleware(["admin"]),
+  singleUploader("image"),
+  updateMember,
+);
 membersRouter.delete("/:uuid", authMiddleware(["admin"]), deleteMember);
 membersRouter.patch(
   "/deactivate/:uuid",

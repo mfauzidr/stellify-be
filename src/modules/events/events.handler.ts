@@ -14,6 +14,7 @@ import {
   IEventsBody,
   IEventsParams,
 } from "./events.model";
+import { cloudinaryUploader } from "src/shared/helper/courdinary";
 
 const parseMemberUuids = (
   member_uuids?: string | string[],
@@ -92,6 +93,18 @@ export const createEvents = async (
   }
 
   const newEvents = await insert(body);
+  const eventsUuid = newEvents[0].uuid
+
+  if (req.file) {
+    const uploadResult = await cloudinaryUploader(req.file, "events", eventsUuid);
+
+    if (uploadResult.error) {
+      throw new AppError("UPLOAD_FAILED", "Failed to upload image", 400);
+    }
+    const imageUrl = uploadResult.result!.secure_url;
+    await update(eventsUuid, { banner: imageUrl });
+  }
+
   return res.status(200).json({
     success: true,
     message: "Event created successfully",
@@ -113,6 +126,16 @@ export const updateEvent = async (
   ...req.body,
   member_uuids: parseMemberUuids(req.body.member_uuids),
 };
+
+if (req.file) {
+    const uploadResult = await cloudinaryUploader(req.file, "events", uuid);
+
+    if (uploadResult.error) {
+      throw new AppError("UPLOAD_FAILED", "Failed to upload image", 400);
+    }
+    const imageUrl = uploadResult.result!.secure_url;
+    data.banner = imageUrl
+  }
 
   const updatedEvent = await update(uuid, data);
   return res.status(200).json({

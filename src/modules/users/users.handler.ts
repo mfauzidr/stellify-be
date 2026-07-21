@@ -5,6 +5,7 @@ import bcrypt from "bcrypt"
 import { IUserBody, IUserParams, IUserQueryParams } from "./users.model";
 import { IUserResponse } from "src/shared/models/response.model";
 import { findAllUsers, findDetails, insert, setActiveUser, totalCount, update } from "./users.repo";
+import { cloudinaryUploader } from "src/shared/helper/courdinary";
 
 export const getAllUsers = async (
   req: Request<{}, {}, {}, IUserQueryParams>,
@@ -77,17 +78,7 @@ export const createUsers = async (
   req.body.password = hashed;
 
   const user = await insert(req.body);
-//   const userUuid = user[0].uuid;
 
-//   if (req.file) {
-//     const uploadResult = await cloudinaryUploader(req, "user", userUuid);
-
-//     if (uploadResult.error) {
-//       throw new AppError("UPLOAD_FAILED", "Failed to upload image", 400);
-//     }
-//     const imageUrl = uploadResult.result?.secure_url;
-//     await update(userUuid, { image: imageUrl });
-//   }
   return res.json({
     success: true,
     message: "Create user successfully",
@@ -111,16 +102,6 @@ export const updateUsers = async (
     const hashed = await bcrypt.hash(password, salt);
     data.password = hashed;
   }
-
-//   if (req.file) {
-//     const uploadResult = await cloudinaryUploader(req, "user", uuid);
-
-//     if (uploadResult.error) {
-//       throw new AppError("UPLOAD_FAILED", "Failed to upload image", 400);
-//     }
-//     const imageUrl = uploadResult.result?.secure_url;
-//     data.image = imageUrl;
-//   }
 
   const user = await update(uuid, data);
   if (user.length < 1) {

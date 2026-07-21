@@ -3,6 +3,7 @@ import { AppError } from "../../shared/helper/appError";
 import { IMemberBody, IMemberQueryParams } from "./members.model";
 import { IMemberResponse } from "src/shared/models/response.model";
 import { findAll, findDetails, insert, remove, setActiveStatus, update } from "./members.repo";
+import { cloudinaryUploader } from "src/shared/helper/courdinary";
 
 export const getAllMembers = async (
   req: Request<{}, {}, {}, IMemberQueryParams>,
@@ -62,6 +63,18 @@ export const createMember = async (
   }
 
   const member = await insert(memberData);
+  const uuid = member[0].uuid
+
+  if (req.file) {
+    const uploadResult = await cloudinaryUploader(req.file, "member", uuid);
+
+    if (uploadResult.error) {
+      throw new AppError("UPLOAD_FAILED", "Failed to upload image", 400);
+    }
+    const imageUrl = uploadResult.result?.secure_url;
+    await update(uuid, { image: imageUrl });
+  }
+
   return res.status(201).json({
     success: true,
     message: "Member created successfully",
@@ -80,6 +93,16 @@ export const updateMember = async (
     }
 
     const memberData = req.body;
+
+    if (req.file) {
+    const uploadResult = await cloudinaryUploader(req.file, "member", uuid);
+
+    if (uploadResult.error) {
+      throw new AppError("UPLOAD_FAILED", "Failed to upload image", 400);
+    }
+    const imageUrl = uploadResult.result?.secure_url;
+    memberData.image = imageUrl
+  }
 
     const member = await update(uuid, memberData);
     if (member.length === 0) {

@@ -9,13 +9,24 @@ import {
   updateEvent,
 } from "./events.handler";
 import { authMiddleware } from "src/middlewares/auth.middleware";
+import { singleUploader } from "src/middlewares/upload.middleware";
 
 const eventsRouter = Router();
 
 eventsRouter.get("/", getAllEvents);
 eventsRouter.get("/:uuid", getEventsByUuid);
-eventsRouter.post("/", authMiddleware(["admin"]), createEvents);
-eventsRouter.patch("/:uuid", authMiddleware(["admin"]), updateEvent);
+eventsRouter.post(
+  "/",
+  authMiddleware(["admin"]),
+  singleUploader("banner"),
+  createEvents,
+);
+eventsRouter.patch(
+  "/:uuid",
+  authMiddleware(["admin"]),
+  singleUploader("banner"),
+  updateEvent,
+);
 eventsRouter.delete("/:uuid", authMiddleware(["admin"]), deleteEvent);
 eventsRouter.patch(
   "/deactivate/:uuid",
