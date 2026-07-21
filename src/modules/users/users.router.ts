@@ -1,13 +1,25 @@
 import { Router } from "express";
-import { createUsers, deactivateUsers, getAllUsers, getDetailUser, restoreUsers, updateUsers } from "./users.handler";
+import {
+  createUsers,
+  deactivateUsers,
+  getAllUsers,
+  getDetailUser,
+  restoreUsers,
+  updateUsers,
+} from "./users.handler";
+import { authMiddleware } from "src/middlewares/auth.middleware";
 
 const usersRouter = Router();
 
-usersRouter.get("/", getAllUsers);
-usersRouter.get("/:uuid", getDetailUser);
-usersRouter.post("/", createUsers);
-usersRouter.patch("/:uuid", updateUsers);
-usersRouter.patch("/deactivate/:uuid", deactivateUsers);
-usersRouter.patch("/restore/:uuid",  restoreUsers);
+usersRouter.get("/", authMiddleware(["admin"]), getAllUsers);
+usersRouter.get("/:uuid", authMiddleware(["admin","user"]), getDetailUser);
+usersRouter.post("/", authMiddleware(["admin"]), createUsers);
+usersRouter.patch("/:uuid", authMiddleware(["admin", "user"]), updateUsers);
+usersRouter.patch(
+  "/deactivate/:uuid",
+  authMiddleware(["admin"]),
+  deactivateUsers,
+);
+usersRouter.patch("/restore/:uuid", authMiddleware(["admin"]), restoreUsers);
 
 export default usersRouter;

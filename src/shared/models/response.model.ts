@@ -45,6 +45,11 @@ export interface IUserResponse extends IBasicResponse {
   results?: IUser[]
 }
 
+export interface IAuthResponse extends IBasicResponse {
+  results?: { token: string }[];
+  uuid?: string;
+}
+
 export interface IErrResponse {
   code?: string;
   column?: string;

@@ -1,15 +1,31 @@
-import { Router } from "express"
-import { createProduct, dectivateProducts, deleteProducts, getAllProducts, getDetailProduct, restoreProducts, updateProduct } from "./product.handler";
-import { deleteProduct } from "./product.repo";
+import { Router } from "express";
+import {
+  createProduct,
+  dectivateProducts,
+  deleteProducts,
+  getAllProducts,
+  getDetailProduct,
+  restoreProducts,
+  updateProduct,
+} from "./product.handler";
+import { authMiddleware } from "src/middlewares/auth.middleware";
 
 const productsRouter = Router();
 
 productsRouter.get("/", getAllProducts);
 productsRouter.get("/:uuid", getDetailProduct);
-productsRouter.post("/", createProduct)
-productsRouter.patch("/:uuid", updateProduct)
-productsRouter.delete("/:uuid",deleteProducts)
-productsRouter.patch("/deactivate/:uuid",dectivateProducts)
-productsRouter.patch("/restore/:uuid",restoreProducts)
+productsRouter.post("/", authMiddleware(["admin"]), createProduct);
+productsRouter.patch("/:uuid", authMiddleware(["admin"]), updateProduct);
+productsRouter.delete("/:uuid", authMiddleware(["admin"]), deleteProducts);
+productsRouter.patch(
+  "/deactivate/:uuid",
+  authMiddleware(["admin"]),
+  dectivateProducts,
+);
+productsRouter.patch(
+  "/restore/:uuid",
+  authMiddleware(["admin"]),
+  restoreProducts,
+);
 
 export default productsRouter;

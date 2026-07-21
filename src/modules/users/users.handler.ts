@@ -58,12 +58,12 @@ export const createUsers = async (
   req: Request<{}, {}, IUserBody>,
   res: Response<IUserResponse>,
 ) => {
-//   const { password } = req.body;
+  const { password } = req.body;
   if (!req.body.first_name || !req.body.email) {
     const missingFields: string[] = [];
     if (!req.body.first_name) missingFields.push("first_name");
     if (!req.body.email) missingFields.push("email");
-    // if (!req.body.password) missingFields.push("password");
+    if (!req.body.password) missingFields.push("password");
 
     throw new AppError(
       "MISSING_FIELD",
@@ -72,9 +72,9 @@ export const createUsers = async (
     );
   }
 
-//   const salt = await bcrypt.genSalt();
-//   const hashed = await bcrypt.hash(password, salt);
-//   req.body.password = hashed;
+  const salt = await bcrypt.genSalt();
+  const hashed = await bcrypt.hash(password, salt);
+  req.body.password = hashed;
 
   const user = await insert(req.body);
 //   const userUuid = user[0].uuid;
@@ -101,16 +101,16 @@ export const updateUsers = async (
 ): Promise<Response> => {
   const {
     params: { uuid },
-    // body: { password },
+    body: { password },
   } = req;
 
   const data: Partial<IUserBody> = { ...req.body };
 
-//   if (password) {
-//     const salt = await bcrypt.genSalt();
-//     const hashed = await bcrypt.hash(password, salt);
-//     data.password = hashed;
-//   }
+  if (password) {
+    const salt = await bcrypt.genSalt();
+    const hashed = await bcrypt.hash(password, salt);
+    data.password = hashed;
+  }
 
 //   if (req.file) {
 //     const uploadResult = await cloudinaryUploader(req, "user", uuid);
