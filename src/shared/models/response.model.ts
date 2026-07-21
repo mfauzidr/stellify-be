@@ -3,6 +3,7 @@ import { IEvents } from "src/modules/events/events.model";
 import { IIdolGroups } from "src/modules/idol_groups/idol_groups.model";
 import { IMembers } from "src/modules/members/members.model";
 import { IProducts } from "src/modules/products/product.model";
+import { IUser } from "src/modules/users/users.model";
 
 interface IPaginationMeta {
   totalData?: number;
@@ -38,6 +39,10 @@ export interface IChekiResponse extends IBasicResponse {
 
 export interface IProductResponse extends IBasicResponse {
   results?: IProducts[]
+}
+
+export interface IUserResponse extends IBasicResponse {
+  results?: IUser[]
 }
 
 export interface IErrResponse {

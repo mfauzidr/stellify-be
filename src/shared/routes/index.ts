@@ -8,6 +8,7 @@ import { requestLogger } from "../../middlewares/requestLogger.middleware";
 import eventsRouter from "src/modules/events/events.router";
 import chekiRouter from "src/modules/cheki/cheki.router";
 import productsRouter from "src/modules/products/product.router";
+import usersRouter from "src/modules/users/users.router";
 
 const router = Router();
 
@@ -16,6 +17,7 @@ router.use("/members", membersRouter);
 router.use("/events", eventsRouter)
 router.use("/cheki-packages", chekiRouter)
 router.use("/products", productsRouter)
+router.use("/users", usersRouter)
 
 router.use(requestLogger);
 router.use(globalErrorHandler);
