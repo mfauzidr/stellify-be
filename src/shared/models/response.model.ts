@@ -3,7 +3,7 @@ import { IEvents } from "src/modules/events/events.model";
 import { IIdolGroups } from "src/modules/idol_groups/idol_groups.model";
 import { IMembers } from "src/modules/members/members.model";
 import { IOrderItems } from "src/modules/order_items/order_items.model";
-import { IOrderList, IOrders } from "src/modules/orders/orders.model";
+import { IOrderDetail, IOrderList, IOrders } from "src/modules/orders/orders.model";
 import { IPayment } from "src/modules/payments/payments.model";
 import { IProducts } from "src/modules/products/product.model";
 import { IUser } from "src/modules/users/users.model";
@@ -56,6 +56,9 @@ export interface IAuthResponse extends IBasicResponse {
 
 export interface IOrderResponse extends IBasicResponse {
   results?: IOrders[]
+}
+export interface IOrderDetailResponse extends IBasicResponse {
+  results?: IOrderDetail[]
 }
 
 export interface IOrderListResponse extends IBasicResponse {

@@ -1,7 +1,10 @@
 import { Request, Response } from "express";
 import { AppError } from "../../shared/helper/appError";
-import { IPaymentsResponse } from "src/shared/models/response.model";
+import { IOrderResponse, IPaymentsResponse } from "src/shared/models/response.model";
 import { findByUuid } from "./payments.repo";
+import { UpdatePaymentStatus } from "../orders/orders.model";
+import { updateManualPaymentService } from "./payments.services";
+import { IUpdateManualPaymentBody } from "./payments.model";
 
 
 export const getByUuid = async (
@@ -22,6 +25,41 @@ export const getByUuid = async (
     success: true,
     message: `Detail payment with uuid ${uuid}`,
     results: payment,
+  });
+};
+
+export const updateManualPayment = async (
+  req: Request<{ uuid: string }, {}, IUpdateManualPaymentBody>,
+  res: Response<IPaymentsResponse>,
+): Promise<Response> => {
+  const { uuid } = req.params;
+
+  const { status } = req.body;
+
+  if (!status) {
+    throw new AppError(
+      "MISSING_FIELD",
+      "payment_status cannot be empty",
+      400,
+    );
+  }
+
+  const allowedStatus: UpdatePaymentStatus[] = ["paid", "cancelled"];
+
+  if (!allowedStatus.includes(status)) {
+    throw new AppError(
+      "INVALID_PAYMENT_STATUS",
+      "Invalid payment status",
+      400,
+    );
+  }
+
+  const updatedPayment = await updateManualPaymentService(uuid, req.body);
+
+  return res.json({
+    success: true,
+    message: "Update payment status successfully",
+    results: updatedPayment,
   });
 };
 

@@ -1,6 +1,12 @@
-export type PaymentStatus = "pending" | "paid" | "expired";
+export type PaymentStatus =
+  | "pending"
+  | "paid"
+  | "expired"
+  | "cancelled"
+  | "failed";
 export type PaymentMethods = "midtrans" | "cash" | "bank_transfer";
 export type UpdatePaymentStatus = Exclude<PaymentStatus, "pending">;
+export type PaymentProvider = "manual" | "midtrans";
 
 export interface IOrderBody {
   order_number: string;
@@ -12,7 +18,7 @@ export interface IOrderBody {
   total_amount: number;
   notes?: string;
   event_uuid?: string;
-  order_phase?: string
+  order_phase?: string;
 }
 
 export interface IOrders extends IOrderBody {
@@ -38,13 +44,12 @@ export interface IOrderQueryParams {
 }
 
 export interface ICreateOrderBody {
-  user_uuid?: string;
   customer_name: string;
   customer_email: string;
   customer_phone: string;
   payment_method: PaymentMethods;
   items: ICreateOrderItemBody[];
-  notes?: string
+  notes?: string;
 }
 
 export interface ICreateOrderItemBody {
@@ -59,11 +64,58 @@ export interface IOrderList {
   order_type: string;
   order_status: string;
   total_amount: number;
-  total_items:number;
+  total_items: number;
   payment_status: PaymentStatus;
+  payment_uuid: string;
   payment_method?: string;
   event_uuid?: string;
   event_title?: string;
   event_banner?: string;
   created_at: Date;
+}
+
+export interface IOrderDetail {
+  uuid: string;
+  order_number: string;
+  payment_uuid: string;
+  order_type: "cheki" | "product";
+  order_phase: "po" | "ots";
+  payment_method: PaymentMethods;
+  provider: PaymentProvider;
+  payment_status: PaymentStatus;
+  transaction_id?: string;
+  paid_at?: Date;
+  expired_at?: Date;
+  total_amount: number;
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string;
+  notes?: string;
+  event_uuid: string;
+  event_title: string;
+  event_date: Date;
+  event_banner?: string | null;
+  created_at: Date;
+  items: IOrderDetailItem[];
+}
+
+export interface IOrderDetailItem {
+  order_item_uuid: string;
+
+  qty: number;
+  price: number;
+  subtotal: number;
+
+  package: {
+    uuid: string;
+    title: string;
+  };
+
+  members: IOrderDetailMember[];
+}
+
+export interface IOrderDetailMember {
+  uuid: string;
+  name: string;
+  image?: string | null;
 }

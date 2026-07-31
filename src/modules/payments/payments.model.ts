@@ -50,7 +50,7 @@ export interface IPaymentQueryParams {
   sort_order?: "asc" | "desc";
 }
 
-export interface IUpdateCashPaymentBody {
+export interface IUpdateManualPaymentBody {
   status: Extract<PaymentStatus, "paid" | "cancelled">;
 }
 

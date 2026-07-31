@@ -1,29 +1,15 @@
 import { NextFunction, Request, Response } from "express";
+import { ICreateOrderBody, IOrderQueryParams, IOrders } from "./orders.model";
 import {
-  ICreateOrderBody,
-  IOrderBody,
-  IOrderQueryParams,
-  IOrders,
-  PaymentStatus,
-  UpdatePaymentStatus,
-} from "./orders.model";
-import {
+  IOrderDetailResponse,
   IOrderListResponse,
   IOrderResponse,
 } from "src/shared/models/response.model";
-import {
-  findAll,
-  findDetails,
-  insert,
-  totalCount,
-  
-} from "./orders.repo";
+import { findAll, findDetails, totalCount } from "./orders.repo";
 import { AppError } from "src/shared/helper/appError";
 import paginLink from "src/shared/helper/paginLinks";
-import { generateOrderNumber } from "src/shared/helper/generateOrderNumber";
 import { IPayload } from "src/shared/models/payload.model";
 import { createOrderService } from "./orders.services";
-// import { updatePaymentStatusService } from "./orders.services";
 
 export const getAllOrders = async (
   req: Request<{}, {}, {}, IOrderQueryParams>,
@@ -70,7 +56,7 @@ export const getAllOrders = async (
 
 export const getDetailOrder = async (
   req: Request<IOrders>,
-  res: Response<IOrderResponse>
+  res: Response<IOrderDetailResponse>,
 ): Promise<Response> => {
   const { uuid } = req.params;
   const order = await findDetails(uuid);
@@ -87,58 +73,26 @@ export const getDetailOrder = async (
 export const createOrder = async (
   req: Request<{}, {}, ICreateOrderBody>,
   res: Response<IOrderListResponse>,
-  next: NextFunction
+  next: NextFunction,
 ) => {
+  const body = req.body;
 
-  const body  = req.body
-  try{
-    await createOrderService(body)
+  const user = (
+    req as Request & {
+      userPayload?: IPayload;
+    }
+  ).userPayload;
+
+  console.log("User Payload :", user)
+
+  try {
+    await createOrderService(body, user?.uuid);
 
     return res.status(200).json({
       success: true,
       message: "Create order successfully",
     });
   } catch (error) {
-    next(error)
+    next(error);
   }
-
 };
-
-// export const updatePaymentStatus = async (
-//   req: Request<{ uuid: string }, {}, { status: UpdatePaymentStatus }>,
-//   res: Response<IOrderResponse>,
-// ): Promise<Response> => {
-//   const { uuid } = req.params;
-
-//   if (!uuid) {
-//     throw new AppError("NO_UUID", "Order UUID must be provided", 400);
-//   }
-
-//   const { status } = req.body;
-
-//   if (!status) {
-//     throw new AppError(
-//       "MISSING_FIELD",
-//       "payment_status cannot be empty",
-//       400,
-//     );
-//   }
-
-//   const allowedStatus: UpdatePaymentStatus[] = ["paid", "expired"];
-
-//   if (!allowedStatus.includes(status)) {
-//     throw new AppError(
-//       "INVALID_PAYMENT_STATUS",
-//       "Invalid payment status",
-//       400,
-//     );
-//   }
-
-//   const updatedOrder = await updatePaymentStatusService(uuid, status);
-
-//   return res.json({
-//     success: true,
-//     message: "Update payment status successfully",
-//     results: updatedOrder,
-//   });
-// };

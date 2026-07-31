@@ -19,7 +19,7 @@ export const authMiddleware =
   (
     req: Request<AppParams>,
     res: Response<IAuthResponse>,
-    next: NextFunction
+    next: NextFunction,
   ) => {
     const bearerToken = req.header("Authorization");
 
@@ -60,29 +60,56 @@ export const authMiddleware =
         ).userPayload = payload;
 
         next();
-      }
+      },
     );
   };
+
+export const optionalAuthMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const bearer = req.headers.authorization;
+
+  if (!bearer?.startsWith("Bearer ")) {
+    return next();
+  }
+
+  const token = bearer.replace("Bearer ", "");
+
+  jwt.verify(
+    token,
+    process.env.JWT_SECRET as string,
+    jwtVerifyOptions,
+    (err, decoded) => {
+      if (err || !decoded) {
+        return next();
+      }
+
+      (
+        req as Request & {
+          userPayload: IPayload;
+        }
+      ).userPayload = decoded as IPayload;
+
+      return next();
+    },
+  );
+};
 
 export const redirectIfAuthenticated = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void => {
-  const token =
-    req.cookies?.token ||
-    req.headers.authorization?.split(" ")[1];
+  const token = req.cookies?.token || req.headers.authorization?.split(" ")[1];
 
   if (!token) {
     return next();
   }
 
   try {
-    jwt.verify(
-      token,
-      process.env.JWT_SECRET as string,
-      jwtVerifyOptions
-    );
+    jwt.verify(token, process.env.JWT_SECRET as string, jwtVerifyOptions);
 
     return res.redirect("/");
   } catch {

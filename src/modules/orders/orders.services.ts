@@ -1,7 +1,6 @@
 import { AppError } from "src/shared/helper/appError";
 
 import { ICreateOrderBody, IOrders, UpdatePaymentStatus } from "./orders.model";
-import { findDetails } from "./orders.repo";
 import db from "src/shared/config/pg";
 import { generateOrderNumber } from "src/shared/helper/generateOrderNumber";
 import * as chekiPackageRepo from "src/modules/cheki/cheki.repo";
@@ -13,6 +12,7 @@ import * as orderItemMembersRepo from "src/modules/order_item_members/order_item
 
 export const createOrderService = async (
   body: ICreateOrderBody,
+  userUuid?: string,
 ): Promise<IOrders> => {
   const client = await db.connect();
 
@@ -156,7 +156,7 @@ export const createOrderService = async (
 
     const [order] = await ordersRepo.insert(
       {
-        user_uuid: body.user_uuid,
+        user_uuid: userUuid,
         customer_name: body.customer_name,
         customer_email: body.customer_email,
         customer_phone: body.customer_phone,
@@ -224,31 +224,3 @@ export const createOrderService = async (
   }
 };
 
-// export const updatePaymentStatusService = async (
-//   uuid: string,
-//   status: UpdatePaymentStatus,
-// ) => {
-//   const order = await findDetails(uuid);
-
-//   if (order.length < 1) {
-//     throw new AppError("NOT_FOUND", "Order not found", 404);
-//   }
-
-//   const currentOrder = order[0];
-
-//   if (currentOrder.payment_status !== "pending") {
-//     throw new AppError(
-//       "INVALID_PAYMENT_STATUS",
-//       `Order has already been ${currentOrder.payment_status}`,
-//       400,
-//     );
-//   }
-
-//   const updatedOrder = await update(uuid, status);
-
-//   if (updatedOrder.length < 1) {
-//     throw new AppError("NO_DATA", "Order not found", 404);
-//   }
-
-//   return updatedOrder;
-// };

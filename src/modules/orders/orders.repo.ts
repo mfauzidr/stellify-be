@@ -3,9 +3,11 @@ import db from "src/shared/config/pg";
 import dayjs from "dayjs";
 import {
   IOrderBody,
+  IOrderDetail,
   IOrderList,
   IOrderQueryParams,
   IOrders,
+  PaymentStatus,
 } from "./orders.model";
 
 type QueryValue = string | number | Date | null;
@@ -108,17 +110,13 @@ export const findAll = async ({
       "o"."order_number",
       "p"."order_type",
       "o"."order_phase",
-      "o"."payment_method",
-      "p"."status" as "payment_status",
+      "o"."customer_name",
+      "e"."title" AS "event_title",
       COALESCE("oi"."total_items", 0) AS "total_items",
       "o"."total_amount"::int,
-      "o"."customer_name",
-      "e"."uuid" AS "event_uuid",
-      "e"."title" AS "event_title",
+      "o"."payment_method",
+      "p"."status" as "payment_status",
       "e"."event_date",
-      "e"."banner" AS "event_banner",
-      "o"."notes",
-      "p"."expired_at",
       "o"."created_at"
     FROM "orders" "o"
     LEFT JOIN "payments" "p" ON "p"."order_uuid" = "o"."uuid"
@@ -138,19 +136,83 @@ export const findAll = async ({
   values.push(limitNum);
   values.push(offset);
 
-
   const result: QueryResult<IOrderList> = await db.query(query, values);
   return result.rows;
 };
 
-export const findDetails = async (uuid: string): Promise<IOrders[]> => {
+export const findDetails = async (uuid: string): Promise<IOrderDetail[]> => {
   const query: string = `
-    SELECT * FROM "orders"
-    WHERE "uuid" = $1
-    `;
+    SELECT
+    "o"."uuid",
+    "o"."order_number",
+    json_build_object(
+      'uuid', "p"."uuid",
+      'order_type', "p"."order_type",
+      'method', "o"."payment_method",
+      'provider', "p"."provider",
+      'status', "p"."status",
+      'transaction_id', "p"."transaction_id",
+      'paid_at', "p"."paid_at",
+      'expired_at', "p"."expired_at"
+    ) AS "payment",
+    "o"."order_phase",
+    "o"."total_amount"::int,
+    "o"."customer_name",
+    "o"."customer_email",
+    "o"."customer_phone",
+    "o"."notes",
+    "e"."uuid" AS "event_uuid",
+    "e"."title" AS "event_title",
+    "e"."event_date",
+    "e"."banner" AS "event_banner",
+    "o"."created_at",
+    COALESCE(
+      (
+        SELECT json_agg(
+          json_build_object(
+            'order_item_uuid', "oi"."uuid",
+            'qty', "oi"."qty",
+            'price', "oi"."price"::int,
+            'subtotal', "oi"."subtotal"::int,
+            'package',
+            json_build_object(
+              'uuid', "cp"."uuid",
+              'title', "cp"."title"
+            ),
+            'members',
+            COALESCE(
+              (
+                SELECT json_agg(
+                  json_build_object(
+                    'uuid', "m"."uuid",
+                    'name', "m"."name",
+                    'image', "m"."image"
+                  )
+                    ORDER BY "m"."name"
+                )
+                FROM "order_item_members" "oim"
+                JOIN "members" "m" ON "m"."uuid" = "oim"."member_uuid"
+                WHERE "oim"."order_item_uuid" = "oi"."uuid"
+              ),
+              '[]'::json
+            )
+          )
+          ORDER BY "oi"."id"
+        )
+        FROM "order_items" "oi"
+        JOIN "cheki_packages" "cp" ON "cp"."uuid" = "oi"."package_uuid"
+        WHERE "oi"."order_uuid" = "o"."uuid"
+      ),
+      '[]'::json
+    ) AS "items"
+  FROM "orders" "o"
+  LEFT JOIN "payments" "p" ON "p"."order_uuid" = "o"."uuid"
+  LEFT JOIN "events" "e" ON "e"."uuid" = "o"."event_uuid"
+  WHERE "o"."uuid" = $1;
+  `;
 
   const values: QueryValue[] = [uuid];
-  const result: QueryResult<IOrders> = await db.query(query, values);
+  const result: QueryResult<IOrderDetail> = await db.query(query, values);
   return result.rows;
 };
 
@@ -200,20 +262,20 @@ export const insert = async (
   return result.rows;
 };
 
-// export const update = async (
-//   uuid: string,
-//   status: PaymentStatus,
-// ): Promise<IOrders[]> => {
-//   const query = `
-//     UPDATE orders
-//     SET
-//       payment_status = $1,
-//       updated_at = NOW()
-//     WHERE uuid = $2
-//     RETURNING *;
-//   `;
+export const update = async (
+  uuid: string,
+  status: PaymentStatus,
+): Promise<IOrders[]> => {
+  const query = `
+    UPDATE orders
+    SET
+      payment_status = $1,
+      updated_at = NOW()
+    WHERE uuid = $2
+    RETURNING *;
+  `;
 
-//   const result: QueryResult<IOrders> = await db.query(query, [status, uuid]);
+  const result: QueryResult<IOrders> = await db.query(query, [status, uuid]);
 
-//   return result.rows;
-// };
+  return result.rows;
+};
