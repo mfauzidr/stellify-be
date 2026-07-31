@@ -1,8 +1,10 @@
 export interface IChekiBody {
     title: string;
     event_uuid: string
-    price_single?: number;
-    price_group?: number
+    po_price_single?: number;
+    po_price_group?: number
+    ots_price_single?: number;
+    ots_price_group?: number
     allow_single?: boolean
     allow_group?: boolean
 }

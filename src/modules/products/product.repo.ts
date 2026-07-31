@@ -31,7 +31,6 @@ export const totalCount = async ({
     query += `WHERE ` + conditions.join(" AND ");
   }
 
-  console.log(query);
 
   const result: QueryResult<{ total: number }> = await db.query(query, values);
   return result.rows[0].total;

@@ -72,8 +72,7 @@ export const insert = async (data: IEventsBody): Promise<IEvents[]> => {
           (${columns.join(", ")})
           VALUES
           (${insertedValues})
-          RETURNING 
-
+          RETURNING *
       `;
 
     const result: QueryResult<IEvents> = await client.query(query, values);

@@ -31,8 +31,6 @@ export async function up(knex: Knex): Promise<void> {
 
     table.text("snap_token");
 
-    table.string("payment_type", 50);
-
     table.decimal("gross_amount", 12, 2).notNullable();
 
     table

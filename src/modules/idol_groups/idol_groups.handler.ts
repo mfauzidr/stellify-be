@@ -58,8 +58,6 @@ export const createIdolGroup = async (
     throw new AppError("NO_NAME", "Name must be provided", 400);
   }
 
-  console.log(req.files)
-
   const newIdolGroup = await insert(req.body);
 
   const uuid = newIdolGroup[0].uuid;
@@ -99,8 +97,6 @@ export const createIdolGroup = async (
     bannerUrl = uploadResult.result!.secure_url;
     await update(uuid, { banner: bannerUrl });
   }
-
-  console.log(logoUrl,bannerUrl)
 
   return res.status(201).json({
     success: true,

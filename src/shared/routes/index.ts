@@ -10,6 +10,7 @@ import chekiRouter from "src/modules/cheki/cheki.router";
 import productsRouter from "src/modules/products/product.router";
 import usersRouter from "src/modules/users/users.router";
 import authRouter from "src/modules/auth/auth.router";
+import ordersRouter from "src/modules/orders/orders.router";
 
 const router = Router();
 
@@ -20,6 +21,8 @@ router.use("/cheki-packages", chekiRouter);
 router.use("/products", productsRouter);
 router.use("/users", usersRouter);
 router.use("/auth", authRouter);
+
+router.use("/orders", ordersRouter)
 
 router.use(requestLogger);
 router.use(globalErrorHandler);

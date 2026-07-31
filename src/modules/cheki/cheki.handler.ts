@@ -65,8 +65,6 @@ export const updateCheki = async (
 
     const data: Partial<IChekiBody> = {...req.body};
 
-    console.log("data :", data);
-
     const updatedCheki = await update(uuid, data);
     return res.status(200).json({
         success: true,
