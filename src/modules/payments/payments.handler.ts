@@ -1,13 +1,13 @@
 import { NextFunction, Request, Response } from "express";
 import { AppError } from "../../shared/helper/appError";
-import { IOrderResponse, IPaymentsResponse } from "src/shared/models/response.model";
+import { IPaymentsResponse } from "src/shared/models/response.model";
 import { findByUuid } from "./payments.repo";
 import { UpdatePaymentStatus } from "../orders/orders.model";
 import { updateManualPaymentService } from "./payments.services";
-import { IUpdateManualPaymentBody } from "./payments.model";
+import { IPayment, IUpdateManualPaymentBody } from "./payments.model";
 import { IMidtransNotificationBody } from "./midtrans/midtrans.model";
-import { handleNotification } from "./midtrans/midtrans.service";
-
+import * as paymentService from "./midtrans/midtrans.service";
+import { expireTransaction } from "./midtrans/midtrans.api";
 
 export const getByUuid = async (
   req: Request<{ uuid: string }>,
@@ -39,21 +39,13 @@ export const updateManualPayment = async (
   const { status } = req.body;
 
   if (!status) {
-    throw new AppError(
-      "MISSING_FIELD",
-      "payment_status cannot be empty",
-      400,
-    );
+    throw new AppError("MISSING_FIELD", "payment_status cannot be empty", 400);
   }
 
   const allowedStatus: UpdatePaymentStatus[] = ["paid", "cancelled"];
 
   if (!allowedStatus.includes(status)) {
-    throw new AppError(
-      "INVALID_PAYMENT_STATUS",
-      "Invalid payment status",
-      400,
-    );
+    throw new AppError("INVALID_PAYMENT_STATUS", "Invalid payment status", 400);
   }
 
   const updatedPayment = await updateManualPaymentService(uuid, req.body);
@@ -65,19 +57,68 @@ export const updateManualPayment = async (
   });
 };
 
-
 export const notification = async (
   req: Request<{}, {}, IMidtransNotificationBody>,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const payment = await handleNotification(req.body);
+    const payment = await paymentService.handleNotification(req.body);
 
     return res.status(200).json({
       success: true,
       message: "Notification processed",
       results: payment,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const syncPaymentStatus = async (
+  req: Request<{ uuid: string }>,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const result = await paymentService.syncPaymentStatus(req.params.uuid);
+
+    return res.status(200).json({
+      success: true,
+      message: "Payment synchronized successfully",
+      results: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const cancelPayment = async (
+  req: Request<{ uuid: string }>,
+  res: Response,
+  next: NextFunction,
+) => {
+  const result = await paymentService.cancelPayment(req.params.uuid);
+
+  return res.status(200).json({
+    success: true,
+    message: "Payment cancelled successfully",
+    results: result,
+  });
+};
+
+export const expirePayment = async (
+  req: Request<{ uuid: string }>,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const result = await paymentService.expirePayment(req.params.uuid);
+
+    return res.status(200).json({
+      success: true,
+      message: "Payment expired successfully",
+      results: result,
     });
   } catch (error) {
     next(error);

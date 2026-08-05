@@ -82,6 +82,8 @@ export const createOrder = async (
       userPayload?: IPayload;
     }
   ).userPayload;
+  try {
+
     const result = await createOrderService(body, user?.uuid);
     if (!result) {
       throw new AppError("CREATE_FAILED", "Failed to create order", 500);
@@ -92,4 +94,7 @@ export const createOrder = async (
       message: "Create order successfully",
       results: result,
     });
+  } catch (error) {
+    next(error);
+  }
 };

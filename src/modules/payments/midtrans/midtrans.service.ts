@@ -10,7 +10,12 @@ import {
   mapMidtransStatus,
   verifySignature,
 } from "src/modules/payments/midtrans/midtrans.helper";
-import { IPayment, PaymentStatus } from "../payments.model";
+import { IPayment } from "../payments.model";
+import {
+  getTransactionStatus,
+  cancelTransaction,
+  expireTransaction,
+} from "./midtrans.api";
 
 export const createSnapTransaction = async (
   body: ICreateSnapTransactionBody,
@@ -29,13 +34,9 @@ export const createSnapTransaction = async (
   };
 
   const transaction = await snap.createTransaction(parameter);
-  if (!transaction) {
-    throw new AppError(
-      "SNAP_TRANSACTION_ERROR",
-      "Failed to create snap transaction",
-      500,
-    );
-  }
+
+  console.log("Snap parameter created:", parameter);
+  console.log("Snap transaction created:", transaction);
 
   return {
     token: transaction.token,
@@ -80,16 +81,104 @@ export const handleNotification = async (
       paymentStatus === "expired" ? new Date(body.transaction_time) : undefined,
   });
 
-  console.log({
-    order_id: body.order_id,
-    transaction_status: body.transaction_status,
+  return updatedPayment;
+};
+
+export const syncPaymentStatus = async (
+  paymentUuid: string,
+): Promise<IPayment> => {
+  const [payment] = await paymentsRepo.findByUuid(paymentUuid);
+
+  if (!payment) {
+    throw new AppError("NOT_FOUND", "Payment not found", 404);
+  }
+
+  if (payment.provider !== "midtrans") {
+    throw new AppError(
+      "INVALID_PROVIDER",
+      "This payment is not using Midtrans",
+      400,
+    );
+  }
+
+  const transaction = await getTransactionStatus(payment.provider_order_id);
+
+  const paymentStatus = mapMidtransStatus(transaction.transaction_status);
+
+  const [updatedPayment] = await paymentsRepo.update(payment.uuid, {
+    transaction_id: transaction.transaction_id,
+    payment_type: transaction.payment_type,
+    gross_amount: Number(transaction.gross_amount),
+    fraud_status: transaction.fraud_status,
+    status: paymentStatus,
+    paid_at:
+      paymentStatus === "paid"
+        ? new Date(transaction.transaction_time)
+        : undefined,
+    raw_response: transaction,
   });
 
   return updatedPayment;
 };
 
-export const getTransactionStatus = async () => {};
+export const cancelPayment = async (
+  paymentUuid: string,
+): Promise<IPayment> => {
+  const [payment] = await paymentsRepo.findByUuid(paymentUuid);
+  console.log("Cancel payment called with UUID:", paymentUuid);
+  console.log("Payment Provider_order_id details:", payment.provider_order_id);
 
-export const cancelTransaction = async () => {};
+  if (!payment) {
+    throw new AppError(
+      "NOT_FOUND",
+      "Payment not found",
+      404,
+    );
+  }
 
-export const expireTransaction = async () => {};
+  if (payment.provider !== "midtrans") {
+    throw new AppError(
+      "INVALID_PROVIDER",
+      "This payment is not using Midtrans",
+      400,
+    );
+  }
+
+  const status = await getTransactionStatus(payment.provider_order_id);
+
+  console.log("status:",status);
+
+  await cancelTransaction(payment.provider_order_id);
+
+  return await syncPaymentStatus(payment.uuid);
+};
+
+export const expirePayment = async (
+  paymentUuid: string,
+): Promise<IPayment> => {
+  const [payment] = await paymentsRepo.findByUuid(paymentUuid);
+
+  if (!payment) {
+    throw new AppError(
+      "NOT_FOUND",
+      "Payment not found",
+      404,
+    );
+  }
+
+  if (payment.provider !== "midtrans") {
+    throw new AppError(
+      "INVALID_PROVIDER",
+      "This payment is not using Midtrans",
+      400,
+    );
+  }
+
+  await expireTransaction(payment.provider_order_id);
+
+  return await syncPaymentStatus(payment.uuid);
+};
+
+export const getPayment = async () => {};
+
+export const retryPayment = async () => {};

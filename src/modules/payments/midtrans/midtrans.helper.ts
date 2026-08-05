@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { MidtransTransactionStatus } from "src/modules/payments/midtrans/midtrans.model";
+import { MidtransFraudStatus, MidtransTransactionStatus } from "src/modules/payments/midtrans/midtrans.model";
 import { PaymentStatus } from "src/modules/orders/orders.model";
 import { AppError } from "src/shared/helper/appError";
 
