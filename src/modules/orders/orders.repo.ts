@@ -255,7 +255,20 @@ export const insert = async (
     (${columns.join(", ")})
     VALUES
     (${insertedValues})
-    RETURNING *
+    RETURNING 
+    "uuid",
+    "order_number",
+    "user_uuid",
+    "customer_name",
+    "customer_email",
+    "customer_phone",
+    "total_amount"::int,
+    "payment_method",
+    "notes",
+    "event_uuid",
+    "order_phase",
+    "created_at",
+    "updated_at"
   `;
 
   const result: QueryResult<IOrders> = await executor.query(query, values);
@@ -272,7 +285,20 @@ export const update = async (
       payment_status = $1,
       updated_at = NOW()
     WHERE uuid = $2
-    RETURNING *;
+    RETURNING 
+    "uuid",
+    "order_number",
+    "user_uuid",
+    "customer_name",
+    "customer_email",
+    "customer_phone",
+    "total_amount"::int,
+    "payment_method",
+    "notes",
+    "event_uuid",
+    "order_phase",
+    "created_at",
+    "updated_at";
   `;
 
   const result: QueryResult<IOrders> = await db.query(query, [status, uuid]);

@@ -94,7 +94,7 @@ export const createProduct = async (
     await update(productUuid, { image: imageUrl });
   }
 
-  return res.json({
+  return res.status(201).json({
     success: true,
     message: "Create product successfully",
     results: product,

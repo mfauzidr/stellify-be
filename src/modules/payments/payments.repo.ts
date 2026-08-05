@@ -1,13 +1,14 @@
 import { PoolClient, QueryResult } from "pg";
 import db from "src/shared/config/pg";
 import { IPayment, IPaymentBody } from "./payments.model";
+import { IMidtransNotificationBody } from "./midtrans/midtrans.model";
 
 type QueryValue =
   | string
   | number
   | boolean
   | Date
-  | Record<string, unknown>
+  | IMidtransNotificationBody
   | null;
 
 export const findByUuid = async (uuid: string): Promise<IPayment[]> => {
@@ -17,6 +18,17 @@ export const findByUuid = async (uuid: string): Promise<IPayment[]> => {
     `;
 
   const values: QueryValue[] = [uuid];
+  const result: QueryResult<IPayment> = await db.query(query, values);
+  return result.rows;
+};
+
+export const findByProviderOrderId = async (providerId: string): Promise<IPayment[]> => {
+  const query: string = `
+    SELECT * FROM "payments"
+    WHERE "provider_order_id" = $1
+    `;
+
+  const values: QueryValue[] = [providerId];
   const result: QueryResult<IPayment> = await db.query(query, values);
   return result.rows;
 };
@@ -41,7 +53,20 @@ export const insert = async (
     (${columns.join(", ")})
     VALUES
     (${insertedValues})
-    RETURNING *
+    RETURNING 
+      "uuid",
+      "order_uuid",
+      "order_type",
+      "provider",
+      "transaction_id",
+      "snap_token",
+      "redirect_url",
+      "gross_amount"::int,
+      "status",
+      "fraud_status",
+      "paid_at",
+      "expired_at",
+      "created_at"
   `;
 
   const result: QueryResult<IPayment> = await executor.query(query, values);
@@ -69,12 +94,26 @@ export const update = async (
   }
 
   const query = `
-        UPDATE "payments"
-        SET ${columns.join(", ")},
-        updated_at = now()
-        WHERE uuid = $1
-        RETURNING *
-    `;
+    UPDATE "payments"
+    SET ${columns.join(", ")},
+    updated_at = now()
+    WHERE uuid = $1
+    RETURNING 
+      "uuid",
+      "order_uuid",
+      "order_type",
+      "provider",
+      "transaction_id",
+      "snap_token",
+      "redirect_url",
+      "gross_amount"::int,
+      "status",
+      "fraud_status",
+      "paid_at",
+      "expired_at",
+      "created_at",
+      "updated_at"
+  `;
 
   const result: QueryResult<IPayment> = await executor.query(query, values);
   return result.rows;

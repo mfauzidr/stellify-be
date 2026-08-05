@@ -1,6 +1,6 @@
 import { AppError } from "src/shared/helper/appError";
 
-import { ICreateOrderBody, IOrders, UpdatePaymentStatus } from "./orders.model";
+import { ICreateOrderBody, IOrderService } from "./orders.model";
 import db from "src/shared/config/pg";
 import { generateOrderNumber } from "src/shared/helper/generateOrderNumber";
 import * as chekiPackageRepo from "src/modules/cheki/cheki.repo";
@@ -9,11 +9,12 @@ import * as ordersRepo from "src/modules/orders/orders.repo";
 import * as paymentsRepo from "src/modules/payments/payments.repo";
 import * as orderItemsRepo from "src/modules/order_items/order_items.repo";
 import * as orderItemMembersRepo from "src/modules/order_item_members/order_item_members.repo";
+import { createSnapTransaction } from "../payments/midtrans/midtrans.service";
 
 export const createOrderService = async (
   body: ICreateOrderBody,
   userUuid?: string,
-): Promise<IOrders> => {
+): Promise<IOrderService> => {
   const client = await db.connect();
 
   try {
@@ -30,9 +31,9 @@ export const createOrderService = async (
 
     const processedItems: {
       package_uuid: string;
+      package_title: string;
       qty: number;
       price: number;
-      subtotal: number;
       member_uuids: string[];
     }[] = [];
 
@@ -147,9 +148,9 @@ export const createOrderService = async (
 
       processedItems.push({
         package_uuid: chekiPackage.uuid,
+        package_title: chekiPackage.title,
         qty: item.qty,
         price,
-        subtotal,
         member_uuids: item.member_uuids,
       });
     }
@@ -177,7 +178,7 @@ export const createOrderService = async (
         ? "paid"
         : "pending";
 
-    await paymentsRepo.insert(
+    const [payment] = await paymentsRepo.insert(
       {
         order_type: "cheki",
         order_uuid: order.uuid,
@@ -197,7 +198,7 @@ export const createOrderService = async (
           package_uuid: item.package_uuid,
           qty: item.qty,
           price: item.price,
-          subtotal: item.subtotal,
+          subtotal: item.price * item.qty,
         },
         client,
       );
@@ -213,9 +214,49 @@ export const createOrderService = async (
       }
     }
 
+    let finalPayment = payment;
+
+    let snapToken: string | undefined;
+    let redirectUrl: string | undefined;
+
+    if (body.payment_method === "midtrans") {
+      const snapTransaction = await createSnapTransaction({
+        order_number: order.order_number,
+        gross_amount: totalAmount,
+        customer: {
+          first_name: body.customer_name,
+          email: body.customer_email,
+          phone: body.customer_phone,
+        },
+        items: processedItems.map((item) => ({
+          id: item.package_uuid,
+          name: item.package_title,
+          price: item.price,
+          quantity: item.qty,
+        })),
+      });
+
+      snapToken = snapTransaction.token;
+      redirectUrl = snapTransaction.redirect_url;
+
+      const [updatedPayment] = await paymentsRepo.update(
+        payment.uuid,
+        {
+          snap_token: snapToken,
+          redirect_url: redirectUrl,
+        },
+        client,
+      );
+
+      finalPayment = updatedPayment;
+    }
+
     await client.query("COMMIT");
 
-    return order;
+    return {
+      order: order,
+      payment: finalPayment,
+    };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -223,4 +264,3 @@ export const createOrderService = async (
     client.release();
   }
 };
-

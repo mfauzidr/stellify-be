@@ -1,3 +1,5 @@
+import { IPayment } from "../payments/payments.model";
+
 export type PaymentStatus =
   | "pending"
   | "paid"
@@ -118,4 +120,11 @@ export interface IOrderDetailMember {
   uuid: string;
   name: string;
   image?: string | null;
+}
+
+export interface IOrderService {
+  order: IOrders;
+  payment: IPayment;
+  snap_token?: string;
+  redirect_url?: string;
 }

@@ -65,6 +65,15 @@ export interface IOrderListResponse extends IBasicResponse {
   results?: IOrderList[]
 }
 
+export interface ICreateOrderResponse {
+  success: boolean;
+  message: string;
+  results: {
+    order: IOrders;
+    payment: IPayment;
+  };
+}
+
 export interface IOrderItemsResponse extends IBasicResponse {
   results?: IOrderItems[]
 }

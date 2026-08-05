@@ -1,10 +1,12 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { AppError } from "../../shared/helper/appError";
 import { IOrderResponse, IPaymentsResponse } from "src/shared/models/response.model";
 import { findByUuid } from "./payments.repo";
 import { UpdatePaymentStatus } from "../orders/orders.model";
 import { updateManualPaymentService } from "./payments.services";
 import { IUpdateManualPaymentBody } from "./payments.model";
+import { IMidtransNotificationBody } from "./midtrans/midtrans.model";
+import { handleNotification } from "./midtrans/midtrans.service";
 
 
 export const getByUuid = async (
@@ -64,3 +66,20 @@ export const updateManualPayment = async (
 };
 
 
+export const notification = async (
+  req: Request<{}, {}, IMidtransNotificationBody>,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const payment = await handleNotification(req.body);
+
+    return res.status(200).json({
+      success: true,
+      message: "Notification processed",
+      results: payment,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

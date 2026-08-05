@@ -79,7 +79,7 @@ export const createUsers = async (
 
   const user = await insert(req.body);
 
-  return res.json({
+  return res.status(201).json({
     success: true,
     message: "Create user successfully",
     results: user,

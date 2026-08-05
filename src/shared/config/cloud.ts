@@ -1,5 +1,7 @@
 import { v2 as cloudinary, ConfigOptions } from "cloudinary";
 
+export const CLOUDINARY_ROOT = "stellify";
+
 const cloudConfig: ConfigOptions = {
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.CLOUD_KEY,

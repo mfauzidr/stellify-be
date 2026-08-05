@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authMiddleware } from "src/middlewares/auth.middleware";
-import { updateManualPayment } from "./payments.handler";
+import { updateManualPayment, notification } from "./payments.handler";
 
 const paymentsRouter = Router();
 
@@ -9,5 +9,10 @@ paymentsRouter.patch(
   authMiddleware(["admin"]),
   updateManualPayment,
 );
+paymentsRouter.post(
+  "/midtrans/notification",
+  notification,
+);
 
 export default paymentsRouter;
+

@@ -8,6 +8,7 @@ import express, { Request, Response } from "express";
 import morgan from "morgan"
 import cors, { CorsOptions } from "cors";
 import router from "./src/shared/routes/index";
+import { coreApi } from "src/shared/config/midtrans";
 
 const app = express();
 

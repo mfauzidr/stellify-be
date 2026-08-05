@@ -1,3 +1,5 @@
+import { IMidtransNotificationBody } from "./midtrans/midtrans.model";
+
 type PaymentProvider = "manual" | "midtrans";
 
 export type PaymentOrderType = "cheki" | "product";
@@ -15,7 +17,7 @@ export interface IMidtransPaymentFields {
   fraud_status?: string;
   expired_at?: Date;
   paid_at?: Date;
-  raw_response?: Record<string, unknown>;
+  redirect_url?:string;
 }
 
 export interface IPaymentBody extends IMidtransPaymentFields {
@@ -25,6 +27,8 @@ export interface IPaymentBody extends IMidtransPaymentFields {
   provider_order_id: string;
   gross_amount: number;
   status?: PaymentStatus;
+  raw_response?: IMidtransNotificationBody;
+  payment_type?:string
 }
 
 export interface IPayment extends IPaymentBody {

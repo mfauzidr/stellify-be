@@ -3,6 +3,7 @@ import DataUriParser from "datauri/parser";
 import path from "path";
 
 import cloudinary from "../config/cloud";
+import CLOUDINARY_ROOT from "../config/cloud";
 
 const parser = new DataUriParser();
 
@@ -24,7 +25,7 @@ export const cloudinaryUploader = async (
 
   try {
     const uploadConfig: UploadApiOptions = {
-      folder,
+      folder: `${CLOUDINARY_ROOT}/${folder}`,
       public_id: uid,
       overwrite: true,
       invalidate: true,

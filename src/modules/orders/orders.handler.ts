@@ -2,8 +2,8 @@ import { NextFunction, Request, Response } from "express";
 import { ICreateOrderBody, IOrderQueryParams, IOrders } from "./orders.model";
 import {
   IOrderDetailResponse,
+  ICreateOrderResponse,
   IOrderListResponse,
-  IOrderResponse,
 } from "src/shared/models/response.model";
 import { findAll, findDetails, totalCount } from "./orders.repo";
 import { AppError } from "src/shared/helper/appError";
@@ -72,7 +72,7 @@ export const getDetailOrder = async (
 
 export const createOrder = async (
   req: Request<{}, {}, ICreateOrderBody>,
-  res: Response<IOrderListResponse>,
+  res: Response<ICreateOrderResponse>,
   next: NextFunction,
 ) => {
   const body = req.body;
@@ -82,17 +82,14 @@ export const createOrder = async (
       userPayload?: IPayload;
     }
   ).userPayload;
+    const result = await createOrderService(body, user?.uuid);
+    if (!result) {
+      throw new AppError("CREATE_FAILED", "Failed to create order", 500);
+    }
 
-  console.log("User Payload :", user)
-
-  try {
-    await createOrderService(body, user?.uuid);
-
-    return res.status(200).json({
+    return res.status(201).json({
       success: true,
       message: "Create order successfully",
+      results: result,
     });
-  } catch (error) {
-    next(error);
-  }
 };
