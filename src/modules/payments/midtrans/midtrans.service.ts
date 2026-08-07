@@ -16,6 +16,7 @@ import {
   cancelTransaction,
   expireTransaction,
 } from "./midtrans.api";
+import { logger } from "src/shared/logger/logger";
 
 export const createSnapTransaction = async (
   body: ICreateSnapTransactionBody,
@@ -34,9 +35,6 @@ export const createSnapTransaction = async (
   };
 
   const transaction = await snap.createTransaction(parameter);
-
-  console.log("Snap parameter created:", parameter);
-  console.log("Snap transaction created:", transaction);
 
   return {
     token: transaction.token,
@@ -102,6 +100,11 @@ export const syncPaymentStatus = async (
   }
 
   const transaction = await getTransactionStatus(payment.provider_order_id);
+  if (transaction.status_code === "404") {
+    await paymentsRepo.update(payment.uuid, { status: "expired" });
+
+    return payment ;
+  }
 
   const paymentStatus = mapMidtransStatus(transaction.transaction_status);
 
@@ -121,19 +124,11 @@ export const syncPaymentStatus = async (
   return updatedPayment;
 };
 
-export const cancelPayment = async (
-  paymentUuid: string,
-): Promise<IPayment> => {
+export const cancelPayment = async (paymentUuid: string): Promise<IPayment> => {
   const [payment] = await paymentsRepo.findByUuid(paymentUuid);
-  console.log("Cancel payment called with UUID:", paymentUuid);
-  console.log("Payment Provider_order_id details:", payment.provider_order_id);
 
   if (!payment) {
-    throw new AppError(
-      "NOT_FOUND",
-      "Payment not found",
-      404,
-    );
+    throw new AppError("NOT_FOUND", "Payment not found", 404);
   }
 
   if (payment.provider !== "midtrans") {
@@ -144,26 +139,18 @@ export const cancelPayment = async (
     );
   }
 
-  const status = await getTransactionStatus(payment.provider_order_id);
-
-  console.log("status:",status);
+  await getTransactionStatus(payment.provider_order_id);
 
   await cancelTransaction(payment.provider_order_id);
 
   return await syncPaymentStatus(payment.uuid);
 };
 
-export const expirePayment = async (
-  paymentUuid: string,
-): Promise<IPayment> => {
+export const expirePayment = async (paymentUuid: string): Promise<IPayment> => {
   const [payment] = await paymentsRepo.findByUuid(paymentUuid);
 
   if (!payment) {
-    throw new AppError(
-      "NOT_FOUND",
-      "Payment not found",
-      404,
-    );
+    throw new AppError("NOT_FOUND", "Payment not found", 404);
   }
 
   if (payment.provider !== "midtrans") {

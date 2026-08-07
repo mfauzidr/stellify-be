@@ -8,7 +8,8 @@ import express, { Request, Response } from "express";
 import morgan from "morgan"
 import cors, { CorsOptions } from "cors";
 import router from "./src/shared/routes/index";
-import { coreApi } from "src/shared/config/midtrans";
+import {startScheduler} from "./src/scheduler/scheduler";
+import { logger } from "src/shared/logger/logger";
 
 const app = express();
 
@@ -43,11 +44,13 @@ app.use(router);
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log(
+  logger.info(
     `✅ Server running on port ${PORT} in ${
       process.env.NODE_ENV || "development"
     } mode — DB: ${process.env.DB_HOST || "not specified"}`
   );
+
+  startScheduler();
 });
 
 export default app;

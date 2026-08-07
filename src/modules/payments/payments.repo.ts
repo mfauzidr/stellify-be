@@ -33,6 +33,30 @@ export const findByProviderOrderId = async (providerId: string): Promise<IPaymen
   return result.rows;
 };
 
+export const findExpiredPendingPayments = async (): Promise<IPayment[]> => {
+  const query: string = `
+    SELECT * FROM "payments"
+    WHERE "provider" = 'midtrans'
+    AND "status" = 'pending'
+    AND "created_at" < NOW() - INTERVAL '10 minutes'
+    `;
+  const result: QueryResult<IPayment> = await db.query(query);
+  return result.rows;
+};
+
+export const findPendingClosedPayment = async (): Promise<IPayment[]> => {
+  const query: string = `
+    SELECT "p".* FROM "payments" "p"
+    JOIN "orders" "o" ON "p"."order_uuid" = "o"."uuid"
+    JOIN "events" "e" ON "o"."event_uuid" = "e"."uuid"
+    WHERE "p"."provider" = 'midtrans'
+    AND "p"."status" = 'pending'
+    AND "e"."po_end" < NOW()
+    `;
+  const result: QueryResult<IPayment> = await db.query(query);
+  return result.rows;
+};
+
 export const insert = async (
   data: IPaymentBody,
   client?: PoolClient,
