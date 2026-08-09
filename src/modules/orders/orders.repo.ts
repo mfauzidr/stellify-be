@@ -56,6 +56,7 @@ export const findAll = async ({
   search = "",
   user_uuid = "",
   payment_status,
+  checked_in,
   sort_by,
   sort_order,
   page,
@@ -82,6 +83,14 @@ export const findAll = async ({
   if (payment_status) {
     conditions.push(`"p"."status" = $${values.length + 1}`);
     values.push(`${payment_status}`);
+  }
+
+  if (checked_in !== undefined) {
+    if (checked_in === true) {
+      conditions.push(`"o"."checked_in_at" IS NOT NULL`);
+    } else {
+      conditions.push(`"o"."checked_in_at" IS NULL`);
+    }
   }
 
   if (conditions.length > 0) {
@@ -117,6 +126,8 @@ export const findAll = async ({
       "o"."payment_method",
       "p"."status" as "payment_status",
       "e"."event_date",
+      "o"."checked_in_at",
+      "o"."checked_in_by",
       "o"."created_at"
     FROM "orders" "o"
     LEFT JOIN "payments" "p" ON "p"."order_uuid" = "o"."uuid"
@@ -297,11 +308,35 @@ export const update = async (
     "notes",
     "event_uuid",
     "order_phase",
+    "checked_in_at",
+    "checked_in_by",
     "created_at",
     "updated_at";
   `;
 
   const result: QueryResult<IOrders> = await db.query(query, [status, uuid]);
+
+  return result.rows;
+};
+
+
+export const checkIn = async (
+  uuid: string,
+  checkedInBy: string,
+): Promise<IOrders[]> => {
+  const query = `
+    UPDATE "orders"
+    SET
+      "checked_in_at" = NOW(),
+      "checked_in_by" = $2,
+      "updated_at" = NOW()
+    WHERE "uuid" = $1
+    RETURNING *;
+  `;
+
+  const values = [uuid, checkedInBy];
+
+  const result: QueryResult<IOrders> = await db.query(query, values);
 
   return result.rows;
 };
