@@ -51,6 +51,7 @@ export const findPendingClosedPayment = async (): Promise<IPayment[]> => {
     JOIN "events" "e" ON "o"."event_uuid" = "e"."uuid"
     WHERE "p"."provider" = 'midtrans'
     AND "p"."status" = 'pending'
+    AND "o"."order_phase" = 'po'
     AND "e"."po_end" < NOW()
     `;
   const result: QueryResult<IPayment> = await db.query(query);

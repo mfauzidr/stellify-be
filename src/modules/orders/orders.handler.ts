@@ -4,12 +4,13 @@ import {
   IOrderDetailResponse,
   ICreateOrderResponse,
   IOrderListResponse,
+  IOrderResponse,
 } from "src/shared/models/response.model";
 import { findAll, findDetails, totalCount } from "./orders.repo";
 import { AppError } from "src/shared/helper/appError";
 import paginLink from "src/shared/helper/paginLinks";
 import { IPayload } from "src/shared/models/payload.model";
-import { createOrderService } from "./orders.services";
+import { checkInService, createOrderService } from "./orders.services";
 
 export const getAllOrders = async (
   req: Request<{}, {}, {}, IOrderQueryParams>,
@@ -99,3 +100,27 @@ export const createOrder = async (
   }
 };
 
+export const checkInOrder = async (
+  req: Request<{ uuid: string }>,
+  res: Response<IOrderResponse>,
+): Promise<Response> => {
+  const { uuid } = req.params;
+
+  const user = (
+    req as Request & {
+      userPayload?: IPayload;
+    }
+  ).userPayload;
+
+  if (!user) {
+    throw new AppError("UNAUTHORIZED", "User not authenticated", 401);
+  }
+
+  const chekcedInOrder = await checkInService(uuid, user.uuid);
+
+  return res.status(200).json({
+    success: true,
+    message: "Check-in order successfully",
+    results: [chekcedInOrder],
+  });
+}

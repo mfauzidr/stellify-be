@@ -1,4 +1,5 @@
-import { findByUuid, findPendingClosedPayment } from "src/modules/payments/payments.repo";
+import * as paymentsRepo from "src/modules/payments/payments.repo";
+import * as ordersRepo from "src/modules/orders/orders.repo";
 import {
   expirePayment,
   syncPaymentStatus,
@@ -7,7 +8,7 @@ import { logger } from "../shared/logger/logger";
 
 export const poClosingJob = async () => {
   try {
-    const payments = await findPendingClosedPayment();
+    const payments = await paymentsRepo.findPendingClosedPayment();
 
     if (payments.length === 0) {
       return;
@@ -19,9 +20,10 @@ export const poClosingJob = async () => {
 
     for (const payment of payments) {
       try {
+
         await syncPaymentStatus(payment.uuid);
 
-        const [updatedPayment] = await findByUuid(payment.uuid);
+        const [updatedPayment] = await paymentsRepo.findByUuid(payment.uuid);
 
         if (updatedPayment.status !== "pending") {
           continue;

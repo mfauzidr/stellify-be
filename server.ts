@@ -45,9 +45,9 @@ app.use(router);
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   logger.info(
-    `✅ Server running on port ${PORT} in ${
+    `Server running on port ${PORT} in ${
       process.env.NODE_ENV || "development"
-    } mode — DB: ${process.env.DB_HOST || "not specified"}`
+    } mode - DB: ${process.env.DB_HOST || "not specified"}`
   );
 
   startScheduler();

@@ -1,6 +1,6 @@
 import { AppError } from "src/shared/helper/appError";
 
-import { ICreateOrderBody, IOrderService } from "./orders.model";
+import { ICreateOrderBody, IOrders, IOrderService } from "./orders.model";
 import db from "src/shared/config/pg";
 import { generateOrderNumber } from "src/shared/helper/generateOrderNumber";
 import * as chekiPackageRepo from "src/modules/cheki/cheki.repo";
@@ -63,7 +63,9 @@ export const createOrderService = async (
 
       const poStart = new Date(event.po_start);
       const poEnd = new Date(event.po_end);
-      const eventDate = new Date(event.event_date);
+      const eventDay = new Date(event.event_date);
+
+      eventDay.setHours(23, 59, 59, 999);
 
       if (now < poStart) {
         throw new AppError(
@@ -73,7 +75,7 @@ export const createOrderService = async (
         );
       }
 
-      if (now > eventDate) {
+      if (now > eventDay) {
         throw new AppError("EVENT_ENDED", "This event has ended", 400);
       }
 
@@ -265,3 +267,32 @@ export const createOrderService = async (
   }
 };
 
+export const checkInService = async (
+  orderUuid: string,
+  checkedInBy: string,
+): Promise<IOrders> => {
+  const [order] = await ordersRepo.findDetails(orderUuid);
+  if (!order) {
+    throw new AppError("NOT_FOUND", "Order not found", 404);
+  }
+
+  const [payment] = await paymentsRepo.findByProviderOrderId(
+    order.order_number,
+  );
+
+  if (payment.status !== "paid") {
+    throw new AppError("NOT_PAID", "Order has not been paid", 400);
+  }
+
+  if (order.checked_in_at !== null) {
+    throw new AppError(
+      "ALREADY_CHECKED_IN",
+      "Order has already been checked in",
+      400,
+    );
+  }
+
+  const [updatedOrder] = await ordersRepo.checkIn(order.uuid, checkedInBy);
+
+  return updatedOrder;
+};

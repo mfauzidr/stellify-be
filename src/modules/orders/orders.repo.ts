@@ -176,6 +176,8 @@ export const findDetails = async (uuid: string): Promise<IOrderDetail[]> => {
     "e"."title" AS "event_title",
     "e"."event_date",
     "e"."banner" AS "event_banner",
+    "o"."checked_in_at",
+    "o"."checked_in_by",
     "o"."created_at",
     COALESCE(
       (
@@ -286,38 +288,38 @@ export const insert = async (
   return result.rows;
 };
 
-export const update = async (
-  uuid: string,
-  status: PaymentStatus,
-): Promise<IOrders[]> => {
-  const query = `
-    UPDATE orders
-    SET
-      payment_status = $1,
-      updated_at = NOW()
-    WHERE uuid = $2
-    RETURNING 
-    "uuid",
-    "order_number",
-    "user_uuid",
-    "customer_name",
-    "customer_email",
-    "customer_phone",
-    "total_amount"::int,
-    "payment_method",
-    "notes",
-    "event_uuid",
-    "order_phase",
-    "checked_in_at",
-    "checked_in_by",
-    "created_at",
-    "updated_at";
-  `;
+// export const update = async (
+//   uuid: string,
+//   status: PaymentStatus,
+// ): Promise<IOrders[]> => {
+//   const query = `
+//     UPDATE orders
+//     SET
+//       payment_status = $1,
+//       updated_at = NOW()
+//     WHERE uuid = $2
+//     RETURNING 
+//     "uuid",
+//     "order_number",
+//     "user_uuid",
+//     "customer_name",
+//     "customer_email",
+//     "customer_phone",
+//     "total_amount"::int,
+//     "payment_method",
+//     "notes",
+//     "event_uuid",
+//     "order_phase",
+//     "checked_in_at",
+//     "checked_in_by",
+//     "created_at",
+//     "updated_at";
+//   `;
 
-  const result: QueryResult<IOrders> = await db.query(query, [status, uuid]);
+//   const result: QueryResult<IOrders> = await db.query(query, [status, uuid]);
 
-  return result.rows;
-};
+//   return result.rows;
+// };
 
 
 export const checkIn = async (

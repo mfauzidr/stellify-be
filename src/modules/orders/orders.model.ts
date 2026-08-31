@@ -98,6 +98,8 @@ export interface IOrderDetail {
   event_title: string;
   event_date: Date;
   event_banner?: string | null;
+  checked_in_at?: Date | null;
+  checked_in_by?: string | null;
   created_at: Date;
   items: IOrderDetailItem[];
 }
