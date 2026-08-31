@@ -1,4 +1,4 @@
-import { QueryResult } from "pg";
+import { PoolClient, QueryResult } from "pg";
 import db from "../../shared/config/pg";
 import { ICheki, IChekiBody } from "./cheki.models";
 
@@ -16,7 +16,7 @@ export const findByUuid = async (uuid: string): Promise<ICheki[]> => {
   return result.rows;
 };
 
-export const insert = async (data: IChekiBody): Promise<ICheki[]> => {
+export const insert = async (data: IChekiBody, executor: PoolClient): Promise<ICheki[]> => {
   const columns: QueryValue[] = [];
   const values: QueryValue[] = [];
   for (const [key, value] of Object.entries(data)) {
@@ -34,7 +34,7 @@ export const insert = async (data: IChekiBody): Promise<ICheki[]> => {
         RETURNING *
     `;
 
-  const result: QueryResult<ICheki> = await db.query(query, values);
+  const result: QueryResult<ICheki> = await executor.query(query, values);
   return result.rows;
 };
 

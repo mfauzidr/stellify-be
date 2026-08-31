@@ -51,7 +51,10 @@ const insertEventMembers = async (
   }
 };
 
-export const insert = async (data: IEventsBody): Promise<IEvents[]> => {
+export const insert = async (
+  data: IEventsBody,
+  executor: PoolClient,
+): Promise<IEvents[]> => {
   const { member_uuids, ...eventData } = data;
 
   const columns: QueryValue[] = [];
@@ -75,7 +78,7 @@ export const insert = async (data: IEventsBody): Promise<IEvents[]> => {
           RETURNING *
       `;
 
-    const result: QueryResult<IEvents> = await client.query(query, values);
+    const result: QueryResult<IEvents> = await executor.query(query, values);
 
     const event = result.rows[0];
 

@@ -175,11 +175,6 @@ export const createOrderService = async (
 
     const provider = body.payment_method === "midtrans" ? "midtrans" : "manual";
 
-    const initialPaymentStatus =
-      orderPhase === "ots" && body.payment_method === "cash"
-        ? "paid"
-        : "pending";
-
     const [payment] = await paymentsRepo.insert(
       {
         order_type: "cheki",
@@ -187,8 +182,7 @@ export const createOrderService = async (
         provider,
         provider_order_id: order.order_number,
         gross_amount: totalAmount,
-        status: initialPaymentStatus,
-        paid_at: initialPaymentStatus === "paid" ? new Date() : undefined,
+        status: "pending",
       },
       client,
     );

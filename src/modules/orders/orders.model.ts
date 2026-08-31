@@ -40,6 +40,7 @@ export interface IOrderQueryParams {
   page?: string;
   limit?: string;
   payment_status?: PaymentStatus;
+  event_title?: string;
   checked_in?: boolean;
   user_uuid?: string;
   sort_by?: string;

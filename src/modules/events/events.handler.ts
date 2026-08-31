@@ -9,12 +9,9 @@ import {
   setActiveStatus,
   update,
 } from "./events.repo";
-import {
-  IEventRequest,
-  IEventsBody,
-  IEventsParams,
-} from "./events.model";
+import { IEventRequest, IEventsBody, IEventsParams } from "./events.model";
 import { cloudinaryUploader } from "src/shared/helper/courdinary";
+import db from "src/shared/config/pg";
 
 const parseMemberUuids = (
   member_uuids?: string | string[],
@@ -73,13 +70,18 @@ export const createEvents = async (
   req: Request<{}, {}, IEventRequest>,
   res: Response<IEventsResponse>,
 ): Promise<Response> => {
+  const client = await db.connect();
   const body: IEventsBody = {
     ...req.body,
     member_uuids: req.body.member_uuids.split(",").map((x) => x.trim()),
   };
 
   if (body.member_uuids.length < 1) {
-    throw new AppError("NO_MEMBER", "At least one member must be selected", 400)
+    throw new AppError(
+      "NO_MEMBER",
+      "At least one member must be selected",
+      400,
+    );
   }
 
   if (!req.body.idol_group_uuid) {
@@ -92,11 +94,15 @@ export const createEvents = async (
     throw new AppError("NO_DATE", "Event date must be provided", 400);
   }
 
-  const newEvents = await insert(body);
-  const eventsUuid = newEvents[0].uuid
+  const newEvents = await insert(body, client);
+  const eventsUuid = newEvents[0].uuid;
 
   if (req.file) {
-    const uploadResult = await cloudinaryUploader(req.file, "events", eventsUuid);
+    const uploadResult = await cloudinaryUploader(
+      req.file,
+      "events",
+      eventsUuid,
+    );
 
     if (uploadResult.error) {
       throw new AppError("UPLOAD_FAILED", "Failed to upload image", 400);
@@ -123,18 +129,18 @@ export const updateEvent = async (
   }
 
   const data: Partial<IEventsBody> = {
-  ...req.body,
-  member_uuids: parseMemberUuids(req.body.member_uuids),
-};
+    ...req.body,
+    member_uuids: parseMemberUuids(req.body.member_uuids),
+  };
 
-if (req.file) {
+  if (req.file) {
     const uploadResult = await cloudinaryUploader(req.file, "events", uuid);
 
     if (uploadResult.error) {
       throw new AppError("UPLOAD_FAILED", "Failed to upload image", 400);
     }
     const imageUrl = uploadResult.result!.secure_url;
-    data.banner = imageUrl
+    data.banner = imageUrl;
   }
 
   const updatedEvent = await update(uuid, data);

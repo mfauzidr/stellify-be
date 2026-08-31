@@ -4,6 +4,7 @@ import { AppError } from "src/shared/helper/appError"
 import { IChekiResponse } from "src/shared/models/response.model";
 import { findAll, findByUuid, insert, remove, setActiveStatus, update } from "./cheki.repo";
 import { IChekiBody, IChekiParams } from "./cheki.models";
+import db from "src/shared/config/pg";
 
 export const getAllCheki = async (req: Request, res: Response<IChekiResponse>): Promise<Response> => {
     const cheki = await findAll();
@@ -41,11 +42,12 @@ export const createCheki = async (
     req: Request<{}, {}, IChekiBody>, 
     res: Response<IChekiResponse>, 
 ): Promise<Response> => {
+    const client = await db.connect();
     if (!req.body.title) {
         throw new AppError("NO_NAME", "Name must be provided", 400);
     }
 
-    const newCheki = await insert(req.body);
+    const newCheki = await insert(req.body, client);
     return res.status(201).json({
         success: true,
         message: "Cheki package created successfully",
