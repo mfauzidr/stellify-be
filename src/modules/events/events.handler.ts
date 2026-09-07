@@ -48,13 +48,15 @@ export const getEventsByUuid = async (
   req: Request<IEventsParams>,
   res: Response<IEventsResponse>,
 ): Promise<Response> => {
+
+  const client = await db.connect();
   const { uuid } = req.params;
 
   if (!uuid || uuid === ":uuid") {
     throw new AppError("NO_ID", "UUID must be provided", 400);
   }
 
-  const events = await findByUuid(uuid);
+  const events = await findByUuid(uuid, client);
   if (events.length < 1) {
     throw new AppError("NO_DATA", "No Data Found", 404);
   }
@@ -72,17 +74,8 @@ export const createEvents = async (
 ): Promise<Response> => {
   const client = await db.connect();
   const body: IEventsBody = {
-    ...req.body,
-    member_uuids: req.body.member_uuids.split(",").map((x) => x.trim()),
+    ...req.body
   };
-
-  if (body.member_uuids.length < 1) {
-    throw new AppError(
-      "NO_MEMBER",
-      "At least one member must be selected",
-      400,
-    );
-  }
 
   if (!req.body.idol_group_uuid) {
     throw new AppError("NO_ID", "Event UUID must be provided", 400);
@@ -108,7 +101,7 @@ export const createEvents = async (
       throw new AppError("UPLOAD_FAILED", "Failed to upload image", 400);
     }
     const imageUrl = uploadResult.result!.secure_url;
-    await update(eventsUuid, { banner: imageUrl });
+    await update(eventsUuid, { banner: imageUrl }, client);
   }
 
   return res.status(200).json({
@@ -122,6 +115,7 @@ export const updateEvent = async (
   req: Request<{ uuid: string }, {}, IEventRequest>,
   res: Response<IEventsResponse>,
 ): Promise<Response> => {
+  const client = await db.connect();
   const { uuid } = req.params;
 
   if (!uuid || uuid === ":uuid") {
@@ -129,8 +123,7 @@ export const updateEvent = async (
   }
 
   const data: Partial<IEventsBody> = {
-    ...req.body,
-    member_uuids: parseMemberUuids(req.body.member_uuids),
+    ...req.body
   };
 
   if (req.file) {
@@ -143,7 +136,7 @@ export const updateEvent = async (
     data.banner = imageUrl;
   }
 
-  const updatedEvent = await update(uuid, data);
+  const updatedEvent = await update(uuid, data, client);
   return res.status(200).json({
     success: true,
     message: "Event updated successfully",

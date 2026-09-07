@@ -46,7 +46,7 @@ export const createOrderService = async (
         throw new AppError("NO_DATA", "Cheki package not found", 404);
       }
 
-      const [event] = await eventsRepo.findByUuid(chekiPackage.event_uuid);
+      const [event] = await eventsRepo.findByUuid(chekiPackage.event_uuid, client);
       if (!event) {
         throw new AppError("NO_DATA", "Event not found", 404);
       }

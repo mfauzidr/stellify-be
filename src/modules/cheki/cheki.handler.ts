@@ -59,6 +59,7 @@ export const updateCheki = async (
     req: Request<{uuid: string}, {}, IChekiBody>,
     res: Response<IChekiResponse>
 ): Promise<Response> => {
+    const client = await db.connect();
     const { uuid } = req.params;
 
     if (!uuid || uuid === ":uuid") {
@@ -67,7 +68,7 @@ export const updateCheki = async (
 
     const data: Partial<IChekiBody> = {...req.body};
 
-    const updatedCheki = await update(uuid, data);
+    const updatedCheki = await update(uuid, data, client);
     return res.status(200).json({
         success: true,
         message: "Cheki package updated successfully",

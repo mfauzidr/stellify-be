@@ -16,6 +16,25 @@ export const findByUuid = async (uuid: string): Promise<ICheki[]> => {
   return result.rows;
 };
 
+export const findByEventUuid = async (
+  eventUuid: string,
+  executor: PoolClient,
+): Promise<ICheki[]> => {
+  const query = `
+    SELECT *
+    FROM "cheki_packages"
+    WHERE "event_uuid" = $1
+    ORDER BY "id";
+  `;
+
+  const result: QueryResult<ICheki> = await executor.query(
+    query,
+    [eventUuid],
+  );
+
+  return result.rows;
+};
+
 export const insert = async (data: IChekiBody, executor: PoolClient): Promise<ICheki[]> => {
   const columns: QueryValue[] = [];
   const values: QueryValue[] = [];
@@ -41,6 +60,7 @@ export const insert = async (data: IChekiBody, executor: PoolClient): Promise<IC
 export const update = async (
   uuid: string,
   data: Partial<IChekiBody>,
+  executor: PoolClient,
 ): Promise<ICheki[]> => {
   const columns: QueryValue[] = [];
   const values: QueryValue[] = [uuid];
@@ -57,7 +77,7 @@ export const update = async (
         RETURNING *
     `;
 
-  const result: QueryResult<ICheki> = await db.query(query, values);
+  const result: QueryResult<ICheki> = await executor.query(query, values);
   return result.rows;
 };
 

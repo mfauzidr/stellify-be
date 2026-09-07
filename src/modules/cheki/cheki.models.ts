@@ -1,4 +1,5 @@
 export interface IChekiBody {
+    uuid?: string;
     title: string;
     event_uuid: string
     po_price_single?: number;
