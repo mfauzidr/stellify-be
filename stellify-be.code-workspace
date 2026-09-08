@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"name": "stellify-be",
+			"path": "."
+		}
+	],
+	"settings": {
+		"sqltools.connections": [
+			{
+				"ssh": "Disabled",
+				"previewLimit": 50,
+				"server": "localhost",
+				"port": 5432,
+				"driver": "PostgreSQL",
+				"name": "stellify",
+				"username": "postgres",
+				"database": "stellify_team"
+			}
+		]
+	}
+}

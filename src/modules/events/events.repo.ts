@@ -8,12 +8,16 @@ export const findAll = async (): Promise<IEvents[]> => {
   const query = `
     SELECT 
       "e".*,
-      json_agg("m"."name" ORDER BY "m"."name") AS "member_lineups"
+      COALESCE(
+        json_agg("m"."name" ORDER BY "m"."name") FILTER (WHERE "m"."uuid" IS NOT NULL),
+        '[]'::json
+      ) AS "member_lineups"
     FROM "events" "e"
     LEFT JOIN "event_members" "em" ON "e"."uuid" = "em"."event_uuid"
     LEFT JOIN "members" "m" ON "em"."member_uuid" = "m"."uuid"
     WHERE "e"."is_active" = true
     GROUP BY "e"."id"
+    ORDER BY "e"."event_date" ASC, "e"."id" ASC
   `;
   const result: QueryResult<IEvents> = await db.query(query);
   return result.rows;
@@ -22,21 +26,29 @@ export const findAll = async (): Promise<IEvents[]> => {
 export const findByUuid = async (
   uuid: string,
   executor: PoolClient,
+  includeInactive = true,
 ): Promise<IEvents[]> => {
   const query = `
     SELECT 
       "e".*,
-      json_agg("m"."name" ORDER BY "m"."name") AS "member_lineups"
+      COALESCE(
+        json_agg("m"."name" ORDER BY "m"."name") FILTER (WHERE "m"."uuid" IS NOT NULL),
+        '[]'::json
+      ) AS "member_lineups"
     FROM "events" "e"
     LEFT JOIN "event_members" "em"
       ON "e"."uuid" = "em"."event_uuid"
     LEFT JOIN "members" "m"
       ON "em"."member_uuid" = "m"."uuid"
     WHERE "e"."uuid" = $1
+      AND ($2 = true OR "e"."is_active" = true)
     GROUP BY "e"."id"
   `;
 
-  const result: QueryResult<IEvents> = await executor.query(query, [uuid]);
+  const result: QueryResult<IEvents> = await executor.query(query, [
+    uuid,
+    includeInactive,
+  ]);
 
   return result.rows;
 };
@@ -103,8 +115,11 @@ export const update = async (
 
 export const remove = async (uuid: string): Promise<IEvents[]> => {
   const query = `
-        DELETE FROM "events"
-        WHERE uuid = $1
+        UPDATE "events"
+        SET "is_active" = false,
+            "deleted_at" = NOW(),
+            "updated_at" = NOW()
+        WHERE "uuid" = $1
         RETURNING *
     `;
   const result: QueryResult<IEvents> = await db.query(query, [uuid]);
@@ -119,7 +134,7 @@ export const setActiveStatus = async (
 
   const query = `
     UPDATE "events"
-    SET "is_active" = $2 ${deleteClause}
+    SET "is_active" = $2 ${deleteClause}, "updated_at" = NOW()
     WHERE uuid = $1
     RETURNING *
 `;

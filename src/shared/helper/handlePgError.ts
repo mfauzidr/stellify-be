@@ -26,14 +26,20 @@ export const handlePgError = (err: any, res: Response) => {
       case "22P02":
         return res.status(400).json({
           success: false,
-          message: "Invalid UUID Format"
+          message: "Invalid input format"
         })
 
       case "LIMIT_FILE_SIZE":
         return res.status(400).json({
         success: false,
-        message: "File Too Large. Max 1MB.",
+        message: "File Too Large. Max 5MB.",
       });
+
+      case "INVALID_FILE_TYPE":
+        return res.status(400).json({
+          success: false,
+          message: "Invalid file type. Only JPEG, PNG, and WebP are allowed.",
+        });
 
     default:
       return res.status(500).json({

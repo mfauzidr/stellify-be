@@ -9,7 +9,12 @@ import {
   setActiveStatus,
   update,
 } from "./events.repo";
-import { IEventRequest, IEventsBody, IEventsParams } from "./events.model";
+import {
+  IEventRequest,
+  IEvents,
+  IEventsBody,
+  IEventsParams,
+} from "./events.model";
 import { cloudinaryUploader } from "src/shared/helper/courdinary";
 import db from "src/shared/config/pg";
 
@@ -48,7 +53,6 @@ export const getEventsByUuid = async (
   req: Request<IEventsParams>,
   res: Response<IEventsResponse>,
 ): Promise<Response> => {
-
   const client = await db.connect();
   const { uuid } = req.params;
 
@@ -74,7 +78,7 @@ export const createEvents = async (
 ): Promise<Response> => {
   const client = await db.connect();
   const body: IEventsBody = {
-    ...req.body
+    ...req.body,
   };
 
   if (!req.body.idol_group_uuid) {
@@ -90,6 +94,8 @@ export const createEvents = async (
   const newEvents = await insert(body, client);
   const eventsUuid = newEvents[0].uuid;
 
+  let events = newEvents;
+
   if (req.file) {
     const uploadResult = await cloudinaryUploader(
       req.file,
@@ -101,13 +107,13 @@ export const createEvents = async (
       throw new AppError("UPLOAD_FAILED", "Failed to upload image", 400);
     }
     const imageUrl = uploadResult.result!.secure_url;
-    await update(eventsUuid, { banner: imageUrl }, client);
+    events = await update(eventsUuid, { banner: imageUrl }, client);
   }
 
   return res.status(200).json({
     success: true,
     message: "Event created successfully",
-    results: newEvents,
+    results: events,
   });
 };
 
@@ -123,7 +129,7 @@ export const updateEvent = async (
   }
 
   const data: Partial<IEventsBody> = {
-    ...req.body
+    ...req.body,
   };
 
   if (req.file) {

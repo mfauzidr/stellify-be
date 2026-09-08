@@ -20,7 +20,9 @@ const createMulterOptions = (): Options => ({
     ];
 
     if (!allowedMime.includes(file.mimetype)) {
-      return cb(new Error("INVALID_FILE_TYPE"));
+      const error = new Error("INVALID_FILE_TYPE") as Error & { code: string };
+      error.code = "INVALID_FILE_TYPE";
+      return cb(error);
     }
 
     cb(null, true);
