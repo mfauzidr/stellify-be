@@ -1,0 +1,154 @@
+## orders schema ##
+
+CREATE TABLE public.orders (
+	id bigserial NOT NULL,
+	"uuid" uuid DEFAULT gen_random_uuid() NOT NULL,
+	order_number varchar(50) NOT NULL,
+	user_uuid uuid NULL,
+	customer_name varchar(100) NOT NULL,
+	customer_email varchar(255) NOT NULL,
+	customer_phone varchar(20) NOT NULL,
+	total_amount numeric(12, 2) NOT NULL,
+	notes text NULL,
+	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	updated_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	"payment_method" public."payment_method" DEFAULT 'midtrans'::payment_method NOT NULL,
+	event_uuid uuid NULL,
+	"order_phase" public."order_phase" DEFAULT 'po'::order_phase NOT NULL,
+	checked_in_at timestamptz NULL,
+	checked_in_by uuid NULL,
+	CONSTRAINT orders_order_number_unique UNIQUE (order_number),
+	CONSTRAINT orders_pkey PRIMARY KEY (id),
+	CONSTRAINT orders_uuid_unique UNIQUE (uuid),
+	CONSTRAINT orders_checked_in_by_foreign FOREIGN KEY (checked_in_by) REFERENCES public.users("uuid") ON DELETE SET NULL,
+	CONSTRAINT orders_event_uuid_foreign FOREIGN KEY (event_uuid) REFERENCES public.events("uuid") ON DELETE SET NULL ON UPDATE CASCADE,
+	CONSTRAINT orders_user_uuid_foreign FOREIGN KEY (user_uuid) REFERENCES public.users("uuid") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+## payments schema ##
+
+CREATE TABLE public.payments (
+	id bigserial NOT NULL,
+	"uuid" uuid DEFAULT gen_random_uuid() NOT NULL,
+	order_type public."payment_order_type" NOT NULL,
+	order_uuid uuid NOT NULL,
+	provider varchar(30) DEFAULT 'midtrans'::character varying NOT NULL,
+	transaction_id varchar(255) NULL,
+	snap_token text NULL,
+	payment_type varchar(50) NULL,
+	gross_amount numeric(12, 2) NOT NULL,
+	status public."payment_status" DEFAULT 'pending'::payment_status NOT NULL,
+	fraud_status varchar(30) NULL,
+	expired_at timestamptz NULL,
+	paid_at timestamptz NULL,
+	raw_response jsonb NULL,
+	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	updated_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	provider_order_id varchar(255) NOT NULL,
+	redirect_url text NULL,
+	CONSTRAINT payments_pkey PRIMARY KEY (id),
+	CONSTRAINT payments_uuid_unique UNIQUE (uuid)
+);
+
+## events schema ##
+
+CREATE TABLE public.events (
+	id bigserial NOT NULL,
+	"uuid" uuid DEFAULT gen_random_uuid() NOT NULL,
+	idol_group_uuid uuid NOT NULL,
+	title varchar(150) NOT NULL,
+	description text NULL,
+	banner text NULL,
+	"location" varchar(255) NULL,
+	event_date timestamptz NOT NULL,
+	po_start timestamptz NOT NULL,
+	po_end timestamptz NOT NULL,
+	allow_pickups bool DEFAULT false NOT NULL,
+	status public."event_status" DEFAULT 'draft'::event_status NOT NULL,
+	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	updated_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	is_active bool DEFAULT true NOT NULL,
+	deleted_at timestamptz NULL,
+	CONSTRAINT events_pkey PRIMARY KEY (id),
+	CONSTRAINT events_uuid_unique UNIQUE (uuid),
+	CONSTRAINT events_idol_group_uuid_foreign FOREIGN KEY (idol_group_uuid) REFERENCES public.idol_groups("uuid") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+## cheki_packages schema ##
+
+CREATE TABLE public.cheki_packages (
+	id bigserial NOT NULL,
+	"uuid" uuid DEFAULT gen_random_uuid() NOT NULL,
+	event_uuid uuid NOT NULL,
+	title varchar(150) NOT NULL,
+	image text NULL,
+	po_price_single numeric(12, 2) NOT NULL,
+	po_price_group numeric(12, 2) NOT NULL,
+	allow_single bool DEFAULT true NOT NULL,
+	allow_group bool DEFAULT true NOT NULL,
+	status public."cheki_package_status" DEFAULT 'active'::cheki_package_status NOT NULL,
+	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	updated_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	is_active bool DEFAULT true NOT NULL,
+	deleted_at timestamptz NULL,
+	ots_price_single numeric(12, 2) NOT NULL,
+	ots_price_group numeric(12, 2) NOT NULL,
+	CONSTRAINT cheki_packages_pkey PRIMARY KEY (id),
+	CONSTRAINT cheki_packages_uuid_unique UNIQUE (uuid),
+	CONSTRAINT cheki_packages_event_uuid_foreign FOREIGN KEY (event_uuid) REFERENCES public.events("uuid") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+## event_members schema ##
+
+CREATE TABLE public.event_members (
+	id bigserial NOT NULL,
+	"uuid" uuid DEFAULT gen_random_uuid() NOT NULL,
+	event_uuid uuid NOT NULL,
+	member_uuid uuid NOT NULL,
+	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	updated_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	CONSTRAINT event_members_event_uuid_member_uuid_unique UNIQUE (event_uuid, member_uuid),
+	CONSTRAINT event_members_pkey PRIMARY KEY (id),
+	CONSTRAINT event_members_uuid_unique UNIQUE (uuid),
+	CONSTRAINT event_members_event_uuid_foreign FOREIGN KEY (event_uuid) REFERENCES public.events("uuid") ON DELETE CASCADE ON UPDATE CASCADE,
+	CONSTRAINT event_members_member_uuid_foreign FOREIGN KEY (member_uuid) REFERENCES public.members("uuid") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+## order_items schema ##
+
+CREATE TABLE public.order_items (
+	id bigserial NOT NULL,
+	"uuid" uuid DEFAULT gen_random_uuid() NOT NULL,
+	order_uuid uuid NOT NULL,
+	package_uuid uuid NOT NULL,
+	qty int4 DEFAULT 1 NOT NULL,
+	price numeric(12, 2) NOT NULL,
+	subtotal numeric(12, 2) NOT NULL,
+	created_at timestamp DEFAULT now() NOT NULL,
+	updated_at timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT order_items_pkey PRIMARY KEY (id),
+	CONSTRAINT order_items_uuid_unique UNIQUE (uuid),
+	CONSTRAINT order_items_order_uuid_foreign FOREIGN KEY (order_uuid) REFERENCES public.orders("uuid") ON DELETE CASCADE ON UPDATE CASCADE,
+	CONSTRAINT order_items_package_uuid_foreign FOREIGN KEY (package_uuid) REFERENCES public.cheki_packages("uuid") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+## users schema ##
+
+CREATE TABLE public.users (
+	id bigserial NOT NULL,
+	"uuid" uuid DEFAULT gen_random_uuid() NOT NULL,
+	first_name varchar(100) NULL,
+	last_name varchar(100) NULL,
+	email varchar(255) NOT NULL,
+	"password" text NULL,
+	provider varchar(20) DEFAULT 'local'::character varying NOT NULL,
+	provider_id varchar(255) NULL,
+	"role" varchar(20) DEFAULT 'user'::character varying NOT NULL,
+	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	updated_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	is_active bool DEFAULT true NOT NULL,
+	deleted_at timestamptz NULL,
+	CONSTRAINT users_email_unique UNIQUE (email),
+	CONSTRAINT users_pkey PRIMARY KEY (id),
+	CONSTRAINT users_uuid_unique UNIQUE (uuid)
+);

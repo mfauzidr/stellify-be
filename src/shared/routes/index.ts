@@ -13,6 +13,7 @@ import authRouter from "src/modules/auth/auth.router";
 import chekiEventRouter from "src/modules/chekiEvent/chekiEvent.router";
 import ordersRouter from "src/modules/orders/orders.router";
 import paymentsRouter from "src/modules/payments/payments.router";
+import dashboardRouter from "src/modules/dashboard/dashboard.router";
 
 const router = Router();
 
@@ -27,6 +28,8 @@ router.use("/auth", authRouter);
 router.use("/cheki-events", chekiEventRouter);
 router.use("/orders", ordersRouter)
 router.use("/payments", paymentsRouter)
+
+router.use('/dashboard', dashboardRouter)
 
 router.use(requestLogger);
 router.use(globalErrorHandler);

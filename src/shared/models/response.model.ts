@@ -1,13 +1,24 @@
 import { ICheki } from "src/modules/cheki/cheki.models";
+import {
+  IDashboardCheckInOverview,
+  IDashboardEvent,
+  IDashboardEventOverview,
+  IDashboardOrderPhaseOverview,
+  IDashboardPaymentOverview,
+  IDashboardSummary,
+} from "src/modules/dashboard/dashboard.model";
 import { IEvents } from "src/modules/events/events.model";
 import { IIdolGroups } from "src/modules/idol_groups/idol_groups.model";
 import { IMembers } from "src/modules/members/members.model";
 import { IOrderItems } from "src/modules/order_items/order_items.model";
-import { IOrderDetail, IOrderList, IOrders } from "src/modules/orders/orders.model";
+import {
+  IOrderDetail,
+  IOrderList,
+  IOrders,
+} from "src/modules/orders/orders.model";
 import { IPayment } from "src/modules/payments/payments.model";
 import { IProducts } from "src/modules/products/product.model";
 import { IUser } from "src/modules/users/users.model";
-import { extend } from "zod/v4/core/util.cjs";
 
 interface IPaginationMeta {
   totalData?: number;
@@ -38,15 +49,15 @@ export interface IEventsResponse extends IBasicResponse {
 }
 
 export interface IChekiResponse extends IBasicResponse {
-  results?: ICheki[]
+  results?: ICheki[];
 }
 
 export interface IProductResponse extends IBasicResponse {
-  results?: IProducts[]
+  results?: IProducts[];
 }
 
 export interface IUserResponse extends IBasicResponse {
-  results?: IUser[]
+  results?: IUser[];
 }
 
 export interface IAuthResponse extends IBasicResponse {
@@ -55,14 +66,14 @@ export interface IAuthResponse extends IBasicResponse {
 }
 
 export interface IOrderResponse extends IBasicResponse {
-  results?: IOrders[]
+  results?: IOrders[];
 }
 export interface IOrderDetailResponse extends IBasicResponse {
-  results?: IOrderDetail[]
+  results?: IOrderDetail[];
 }
 
 export interface IOrderListResponse extends IBasicResponse {
-  results?: IOrderList[]
+  results?: IOrderList[];
 }
 
 export interface ICreateOrderResponse {
@@ -75,13 +86,32 @@ export interface ICreateOrderResponse {
 }
 
 export interface IOrderItemsResponse extends IBasicResponse {
-  results?: IOrderItems[]
+  results?: IOrderItems[];
 }
 
 export interface IPaymentsResponse extends IBasicResponse {
-  results?: IPayment[]
+  results?: IPayment[];
 }
 
+export interface IDashboardResponse extends IBasicResponse {
+  results?: IDashboardSummary;
+}
+
+export interface IDashboardPaymentResponse extends IBasicResponse {
+  results?: IDashboardPaymentOverview;
+}
+
+export interface IDashboardCheckInResponse extends IBasicResponse {
+  results?: IDashboardCheckInOverview;
+}
+
+export interface IDashboardOrderPhaseResponse extends IBasicResponse {
+  results?: IDashboardOrderPhaseOverview;
+}
+
+export interface IDashboardEventOverviewResponse extends IBasicResponse {
+  results?: IDashboardEventOverview;
+}
 export interface IErrResponse {
   code?: string;
   column?: string;
