@@ -6,3 +6,5 @@ public/
 .env.*
 
 TODO.md
+
+stellify-be.code-workspace
