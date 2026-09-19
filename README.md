@@ -44,7 +44,7 @@ The server boots in `server.ts`, loads environment variables, configures middlew
 
 ## 4. Project Structure
 
-
+```text
 src/
   jobs/
   middlewares/
