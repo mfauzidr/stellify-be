@@ -1,4 +1,4 @@
-import { PoolClient, QueryResult } from "pg";
+import { Pool, PoolClient, QueryResult } from "pg";
 import db from "../../shared/config/pg";
 import { IEvents, IEventsBody } from "./events.model";
 
@@ -14,7 +14,9 @@ export const findAll = async (): Promise<IEvents[]> => {
       ) AS "member_lineups"
     FROM "events" "e"
     LEFT JOIN "event_members" "em" ON "e"."uuid" = "em"."event_uuid"
-    LEFT JOIN "members" "m" ON "em"."member_uuid" = "m"."uuid"
+    LEFT JOIN "members" "m"
+      ON "em"."member_uuid" = "m"."uuid"
+      AND "m"."is_active" = true
     WHERE "e"."is_active" = true
     GROUP BY "e"."id"
     ORDER BY "e"."event_date" ASC, "e"."id" ASC
@@ -25,8 +27,8 @@ export const findAll = async (): Promise<IEvents[]> => {
 
 export const findByUuid = async (
   uuid: string,
-  executor: PoolClient,
-  includeInactive = true,
+  executor: PoolClient | Pool = db,
+  includeInactive = false,
 ): Promise<IEvents[]> => {
   const query = `
     SELECT 
@@ -40,6 +42,7 @@ export const findByUuid = async (
       ON "e"."uuid" = "em"."event_uuid"
     LEFT JOIN "members" "m"
       ON "em"."member_uuid" = "m"."uuid"
+      AND "m"."is_active" = true
     WHERE "e"."uuid" = $1
       AND ($2 = true OR "e"."is_active" = true)
     GROUP BY "e"."id"
@@ -55,7 +58,7 @@ export const findByUuid = async (
 
 export const insert = async (
   data: IEventsBody,
-  executor: PoolClient,
+  executor: PoolClient | Pool = db,
 ): Promise<IEvents[]> => {
   const { ...eventData } = data;
 
@@ -85,7 +88,7 @@ export const insert = async (
 export const update = async (
   uuid: string,
   data: Partial<IEventsBody>,
-  executor: PoolClient,
+  executor: PoolClient | Pool = db,
 ): Promise<IEvents[]> => {
   const columns: QueryValue[] = [];
   const values: QueryValue[] = [uuid];

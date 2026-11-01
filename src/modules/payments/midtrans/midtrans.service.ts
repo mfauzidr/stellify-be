@@ -59,13 +59,26 @@ export const handleNotification = async (
   }
 
   const payment = payments[0];
+  if (payment.provider !== "midtrans") {
+    throw new AppError("INVALID_PROVIDER", "Payment is not a Midtrans payment", 400);
+  }
+
+  if (Number(payment.gross_amount) !== Number(body.gross_amount)) {
+    throw new AppError("INVALID_AMOUNT", "Payment amount does not match", 400);
+  }
 
   // Idempotent
   if (payment.status === "paid") {
     return payment;
   }
 
-  const paymentStatus = mapMidtransStatus(body.transaction_status);
+  const paymentStatus = mapMidtransStatus(
+    body.transaction_status,
+    body.fraud_status,
+  );
+  if (payment.status !== "pending" && paymentStatus === "pending") {
+    return payment;
+  }
 
   const [updatedPayment] = await paymentsRepo.update(payment.uuid, {
     status: paymentStatus,
@@ -78,6 +91,14 @@ export const handleNotification = async (
     expired_at:
       paymentStatus === "expired" ? new Date(body.transaction_time) : undefined,
   });
+
+  if (!updatedPayment) {
+    const [currentPayment] = await paymentsRepo.findByUuid(payment.uuid);
+    if (currentPayment?.status === "paid") {
+      return currentPayment;
+    }
+    throw new AppError("PAYMENT_UPDATE_FAILED", "Payment update failed", 500);
+  }
 
   return updatedPayment;
 };
@@ -101,12 +122,26 @@ export const syncPaymentStatus = async (
 
   const transaction = await getTransactionStatus(payment.provider_order_id);
   if (transaction.status_code === "404") {
-    await paymentsRepo.update(payment.uuid, { status: "expired" });
-
-    return payment ;
+    const [updatedPayment] = await paymentsRepo.update(payment.uuid, {
+      status: "expired",
+      expired_at: new Date(),
+    });
+    if (!updatedPayment) {
+      throw new AppError("PAYMENT_UPDATE_FAILED", "Payment update failed", 500);
+    }
+    return updatedPayment;
   }
 
-  const paymentStatus = mapMidtransStatus(transaction.transaction_status);
+  const paymentStatus = mapMidtransStatus(
+    transaction.transaction_status,
+    transaction.fraud_status,
+  );
+  if (Number(payment.gross_amount) !== Number(transaction.gross_amount)) {
+    throw new AppError("INVALID_AMOUNT", "Payment amount does not match", 400);
+  }
+  if (payment.status !== "pending" && paymentStatus === "pending") {
+    return payment;
+  }
 
   const [updatedPayment] = await paymentsRepo.update(payment.uuid, {
     transaction_id: transaction.transaction_id,
@@ -120,6 +155,14 @@ export const syncPaymentStatus = async (
         : undefined,
     raw_response: transaction,
   });
+
+  if (!updatedPayment) {
+    const [currentPayment] = await paymentsRepo.findByUuid(payment.uuid);
+    if (currentPayment?.status === "paid") {
+      return currentPayment;
+    }
+    throw new AppError("PAYMENT_UPDATE_FAILED", "Payment update failed", 500);
+  }
 
   return updatedPayment;
 };

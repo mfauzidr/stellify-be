@@ -84,6 +84,7 @@ export const insert = async (
       "order_type",
       "provider",
       "transaction_id",
+      "payment_type",
       "snap_token",
       "redirect_url",
       "gross_amount"::int,
@@ -106,11 +107,15 @@ export const update = async (
   const executor = client ?? db;
   const columns: QueryValue[] = [];
   const values: QueryValue[] = [uuid];
+  let statusParameter = 0;
 
   for (const [key, value] of Object.entries(data)) {
     if (value === undefined) continue;
 
     values.push(value);
+    if (key === "status") {
+      statusParameter = values.length;
+    }
     columns.push(`"${key}" = $${values.length}`);
   }
 
@@ -118,17 +123,22 @@ export const update = async (
     throw new Error("No fields to update");
   }
 
+  const paidGuard = statusParameter
+    ? `AND ("status" <> 'paid' OR $${statusParameter} = 'paid')`
+    : "";
   const query = `
     UPDATE "payments"
     SET ${columns.join(", ")},
     updated_at = now()
     WHERE uuid = $1
+    ${paidGuard}
     RETURNING 
       "uuid",
       "order_uuid",
       "order_type",
       "provider",
       "transaction_id",
+      "payment_type",
       "snap_token",
       "redirect_url",
       "gross_amount"::int,
@@ -141,5 +151,29 @@ export const update = async (
   `;
 
   const result: QueryResult<IPayment> = await executor.query(query, values);
+  return result.rows;
+};
+
+export const updatePendingManual = async (
+  uuid: string,
+  status: "paid" | "cancelled",
+): Promise<IPayment[]> => {
+  const result = await db.query<IPayment>(
+    `
+      UPDATE "payments"
+      SET "status" = $2,
+          "paid_at" = CASE WHEN $2 = 'paid' THEN NOW() ELSE "paid_at" END,
+          "updated_at" = NOW()
+      WHERE "uuid" = $1
+        AND "provider" = 'manual'
+        AND "status" = 'pending'
+      RETURNING
+        "uuid", "order_uuid", "order_type", "provider", "provider_order_id",
+        "transaction_id", "payment_type", "snap_token", "redirect_url",
+        "gross_amount", "status", "fraud_status", "paid_at", "expired_at",
+        "created_at", "updated_at"
+    `,
+    [uuid, status],
+  );
   return result.rows;
 };

@@ -41,7 +41,7 @@ export interface IOrderQueryParams {
   limit?: string;
   payment_status?: PaymentStatus;
   event_title?: string;
-  checked_in?: boolean;
+  checked_in?: string | boolean;
   user_uuid?: string;
   sort_by?: string;
   sort_order?: "asc" | "desc";

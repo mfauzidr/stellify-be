@@ -1,41 +1,56 @@
-import { PoolClient, QueryResult } from "pg";
+import { Pool, PoolClient, QueryResult } from "pg";
 import db from "../../shared/config/pg";
 import { ICheki, IChekiBody } from "./cheki.models";
 
 type QueryValue = string | number | Date | boolean | null;
 
 export const findAll = async (): Promise<ICheki[]> => {
-  const query = `SELECT * FROM "cheki_packages" WHERE "is_active" = true`;
+  const query = `
+    SELECT * FROM "cheki_packages"
+    WHERE "is_active" = true AND "status" = 'active'
+  `;
   const result: QueryResult<ICheki> = await db.query(query);
   return result.rows;
 };
 
-export const findByUuid = async (uuid: string): Promise<ICheki[]> => {
-  const query = `SELECT * FROM "cheki_packages" WHERE uuid = $1`;
-  const result: QueryResult<ICheki> = await db.query(query, [uuid]);
+export const findByUuid = async (
+  uuid: string,
+  activeOnly = true,
+): Promise<ICheki[]> => {
+  const query = `
+    SELECT * FROM "cheki_packages"
+    WHERE uuid = $1
+      AND ($2 = false OR ("is_active" = true AND "status" = 'active'))
+  `;
+  const result: QueryResult<ICheki> = await db.query(query, [uuid, activeOnly]);
   return result.rows;
 };
 
 export const findByEventUuid = async (
   eventUuid: string,
   executor: PoolClient,
+  activeOnly = false,
 ): Promise<ICheki[]> => {
   const query = `
     SELECT *
     FROM "cheki_packages"
     WHERE "event_uuid" = $1
+      AND ($2 = false OR ("is_active" = true AND "status" = 'active'))
     ORDER BY "id";
   `;
 
   const result: QueryResult<ICheki> = await executor.query(
     query,
-    [eventUuid],
+    [eventUuid, activeOnly],
   );
 
   return result.rows;
 };
 
-export const insert = async (data: IChekiBody, executor: PoolClient): Promise<ICheki[]> => {
+export const insert = async (
+  data: IChekiBody,
+  executor: PoolClient | Pool = db,
+): Promise<ICheki[]> => {
   const columns: QueryValue[] = [];
   const values: QueryValue[] = [];
   for (const [key, value] of Object.entries(data)) {
@@ -60,7 +75,7 @@ export const insert = async (data: IChekiBody, executor: PoolClient): Promise<IC
 export const update = async (
   uuid: string,
   data: Partial<IChekiBody>,
-  executor: PoolClient,
+  executor: PoolClient | Pool = db,
 ): Promise<ICheki[]> => {
   const columns: QueryValue[] = [];
   const values: QueryValue[] = [uuid];
@@ -83,7 +98,10 @@ export const update = async (
 
 export const remove = async (uuid: string): Promise<ICheki[]> => {
   const query = `
-        DELETE FROM "cheki_packages"
+        UPDATE "cheki_packages"
+        SET "is_active" = false,
+            "deleted_at" = NOW(),
+            "updated_at" = NOW()
         WHERE uuid = $1
         RETURNING *
     `;

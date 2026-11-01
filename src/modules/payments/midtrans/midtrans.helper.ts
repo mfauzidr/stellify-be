@@ -42,9 +42,11 @@ export const verifySignature = ({
 
 export const mapMidtransStatus = (
   status: MidtransTransactionStatus,
+  fraudStatus?: MidtransFraudStatus,
 ): PaymentStatus => {
   switch (status) {
     case "capture":
+      return fraudStatus === "accept" ? "paid" : "pending";
     case "settlement":
       return "paid";
 
@@ -58,6 +60,7 @@ export const mapMidtransStatus = (
       return "cancelled";
 
     case "deny":
+    case "failure":
       return "failed";
 
     default:

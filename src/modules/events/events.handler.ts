@@ -16,7 +16,6 @@ import {
   IEventsParams,
 } from "./events.model";
 import { cloudinaryUploader } from "src/shared/helper/courdinary";
-import db from "src/shared/config/pg";
 
 const parseMemberUuids = (
   member_uuids?: string | string[],
@@ -53,14 +52,13 @@ export const getEventsByUuid = async (
   req: Request<IEventsParams>,
   res: Response<IEventsResponse>,
 ): Promise<Response> => {
-  const client = await db.connect();
   const { uuid } = req.params;
 
   if (!uuid || uuid === ":uuid") {
     throw new AppError("NO_ID", "UUID must be provided", 400);
   }
 
-  const events = await findByUuid(uuid, client);
+  const events = await findByUuid(uuid);
   if (events.length < 1) {
     throw new AppError("NO_DATA", "No Data Found", 404);
   }
@@ -76,7 +74,6 @@ export const createEvents = async (
   req: Request<{}, {}, IEventRequest>,
   res: Response<IEventsResponse>,
 ): Promise<Response> => {
-  const client = await db.connect();
   const body: IEventsBody = {
     ...req.body,
   };
@@ -91,7 +88,7 @@ export const createEvents = async (
     throw new AppError("NO_DATE", "Event date must be provided", 400);
   }
 
-  const newEvents = await insert(body, client);
+  const newEvents = await insert(body);
   const eventsUuid = newEvents[0].uuid;
 
   let events = newEvents;
@@ -107,7 +104,7 @@ export const createEvents = async (
       throw new AppError("UPLOAD_FAILED", "Failed to upload image", 400);
     }
     const imageUrl = uploadResult.result!.secure_url;
-    events = await update(eventsUuid, { banner: imageUrl }, client);
+    events = await update(eventsUuid, { banner: imageUrl });
   }
 
   return res.status(200).json({
@@ -121,7 +118,6 @@ export const updateEvent = async (
   req: Request<{ uuid: string }, {}, IEventRequest>,
   res: Response<IEventsResponse>,
 ): Promise<Response> => {
-  const client = await db.connect();
   const { uuid } = req.params;
 
   if (!uuid || uuid === ":uuid") {
@@ -142,7 +138,7 @@ export const updateEvent = async (
     data.banner = imageUrl;
   }
 
-  const updatedEvent = await update(uuid, data, client);
+  const updatedEvent = await update(uuid, data);
   return res.status(200).json({
     success: true,
     message: "Event updated successfully",

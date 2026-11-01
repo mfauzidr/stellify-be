@@ -12,6 +12,7 @@ export const totalCount = async ({
   let query = `
     SELECT COUNT(*) as total
     FROM "products"
+    WHERE "is_active" = true
   `;
 
   let values: (string | number)[] = [];
@@ -28,7 +29,7 @@ export const totalCount = async ({
   }
 
   if (conditions.length > 0) {
-    query += `WHERE ` + conditions.join(" AND ");
+    query += ` AND ` + conditions.join(" AND ");
   }
 
 
@@ -51,7 +52,7 @@ export const findAll = async ({
   const offset = (pageNum - 1) * limitNum;
 
   let values: QueryValue[] = [];
-  let conditions: string[] = [];
+  let conditions: string[] = ['"p"."is_active" = true'];
   let whereQuery: string = "";
 
   if (search) {
@@ -68,11 +69,16 @@ export const findAll = async ({
     whereQuery = `WHERE ` + conditions.join(" AND ");
   }
 
-  let orderByClause = 'ORDER BY "id" ASC';
-
-  if (sortBy && order) {
-    orderByClause = `ORDER BY ${sortBy} ${order}`;
-  }
+  const sortableColumns: Record<string, string> = {
+    id: '"p"."id"',
+    name: '"p"."name"',
+    price: '"p"."price"',
+    stock: '"p"."stock"',
+    created_at: '"p"."created_at"',
+  };
+  const sortColumn = sortableColumns[sortBy ?? ""] ?? '"p"."id"';
+  const sortOrder = order?.toUpperCase() === "DESC" ? "DESC" : "ASC";
+  const orderByClause = `ORDER BY ${sortColumn} ${sortOrder}`;
 
   const query: string = `
     SELECT
@@ -116,6 +122,7 @@ export const findDetails = async (uuid: string): Promise<IProducts[]> => {
     FROM "products" "p"
     LEFT JOIN "members" "m" ON "p"."member_uuid" = "m"."uuid"
     WHERE "p"."uuid" = $1
+      AND "p"."is_active" = true
     `;
 
   const values: QueryValue[] = [uuid];

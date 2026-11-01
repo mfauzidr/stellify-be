@@ -43,11 +43,16 @@ export const findAllUsers = async ({
     whereQuery = `WHERE ` + conditions.join(" AND ");
   }
 
-  let orderByClause = 'ORDER BY "id" ASC';
-
-  if (sortBy && order) {
-    orderByClause = `ORDER BY ${sortBy} ${order}`;
-  }
+  const sortableColumns: Record<string, string> = {
+    id: '"id"',
+    first_name: '"first_name"',
+    last_name: '"last_name"',
+    email: '"email"',
+    created_at: '"created_at"',
+  };
+  const sortColumn = sortableColumns[sortBy ?? ""] ?? '"id"';
+  const sortOrder = order?.toUpperCase() === "DESC" ? "DESC" : "ASC";
+  const orderByClause = `ORDER BY ${sortColumn} ${sortOrder}`;
 
   const query = `
     SELECT
@@ -115,7 +120,10 @@ export const insert = async (data: IUserBody): Promise<IUser[]> => {
         (${columns.join(", ")})
         VALUES
         (${insertedValues})
-        RETURNING *
+        RETURNING
+          "id", "uuid", "first_name", "last_name", "email", "role",
+          "provider", "provider_id", "is_active", "created_at", "updated_at",
+          "deleted_at"
     `;
 
   const result: QueryResult<IUser> = await db.query(query, values);
@@ -155,6 +163,16 @@ export const update = async (
   return result.rows;
 };
 
+export const findAuthUser = async (
+  uuid: string,
+): Promise<Pick<IUser, "uuid" | "role" | "is_active"> | undefined> => {
+  const result = await db.query<Pick<IUser, "uuid" | "role" | "is_active">>(
+    `SELECT "uuid", "role", "is_active" FROM "users" WHERE "uuid" = $1`,
+    [uuid],
+  );
+  return result.rows[0];
+};
+
 export const setActiveUser = async (
   uuid: string,
   isActive: boolean,
@@ -173,7 +191,10 @@ export const setActiveUser = async (
     SET "is_active" = $2,
       "deleted_at" = ${deletedAtClause}
     WHERE "uuid" = $1 
-    RETURNING *`;
+    RETURNING
+      "id", "uuid", "first_name", "last_name", "email", "role",
+      "provider", "provider_id", "is_active", "created_at", "updated_at",
+      "deleted_at"`;
 
   const result: QueryResult<IUser> = await db.query(query, values);
   return result.rows;

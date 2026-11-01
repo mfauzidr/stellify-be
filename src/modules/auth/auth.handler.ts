@@ -23,6 +23,9 @@ export const login = async (
     if (!user) {
       throw new AppError("NO_DATA", "User not found", 400);
     }
+    if (!user.is_active) {
+      throw new AppError("ACCOUNT_INACTIVE", "Account is inactive", 403);
+    }
     const hash = user.password;
     const isValid = await bcrypt.compare(password, hash);
     if (!isValid) {

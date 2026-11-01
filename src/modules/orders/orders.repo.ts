@@ -1,4 +1,4 @@
-import { PoolClient, QueryResult } from "pg";
+import { Pool, PoolClient, QueryResult } from "pg";
 import db from "src/shared/config/pg";
 import dayjs from "dayjs";
 import {
@@ -15,36 +15,55 @@ export const totalCount = async ({
   search = "",
   user_uuid = "",
   payment_status,
+  checked_in,
+  event_title,
 }: {
   search?: string;
   user_uuid?: string;
   payment_status?: string;
+  checked_in?: boolean | string;
+  event_title?: string;
 }): Promise<number> => {
   let query = `
-    SELECT COUNT(*)::int as total
-    FROM "orders"
+    SELECT COUNT(DISTINCT "o"."uuid")::int as total
+    FROM "orders" "o"
+    LEFT JOIN "payments" "p" ON "p"."order_uuid" = "o"."uuid"
+    LEFT JOIN "events" "e" ON "e"."uuid" = "o"."event_uuid"
   `;
 
-  let values: (string | number)[] = [];
-  let conditions: QueryValue[] = [];
+  const values: QueryValue[] = [];
+  const conditions: string[] = [];
 
   if (search) {
-    conditions.push(`"order_number" ILIKE $${values.length + 1}`);
+    conditions.push(`"o"."order_number" ILIKE $${values.length + 1}`);
     values.push(`%${search}%`);
   }
 
   if (user_uuid) {
-    conditions.push(`"user_uuid" = $${values.length + 1}`);
+    conditions.push(`"o"."user_uuid" = $${values.length + 1}`);
     values.push(`${user_uuid}`);
   }
 
   if (payment_status) {
-    conditions.push(`"payment_status" = $${values.length + 1}`);
+    conditions.push(`"p"."status" = $${values.length + 1}`);
     values.push(`${payment_status}`);
   }
 
+  if (checked_in !== undefined) {
+    conditions.push(
+      checked_in === true || checked_in === "true"
+        ? `"o"."checked_in_at" IS NOT NULL`
+        : `"o"."checked_in_at" IS NULL`,
+    );
+  }
+
+  if (event_title) {
+    conditions.push(`"e"."title" ILIKE $${values.length + 1}`);
+    values.push(`%${event_title}%`);
+  }
+
   if (conditions.length > 0) {
-    query += `WHERE ` + conditions.join(" AND ");
+    query += ` WHERE ` + conditions.join(" AND ");
   }
 
   const result: QueryResult<{ total: number }> = await db.query(query, values);
@@ -56,13 +75,14 @@ export const findAll = async ({
   user_uuid = "",
   payment_status,
   checked_in,
+  event_title,
   sort_by,
   sort_order,
   page,
   limit,
 }: IOrderQueryParams): Promise<IOrderList[]> => {
   const pageNum = Number(page) || 1;
-  const limitNum = Number(limit) || 10;
+  const limitNum = Number(limit) || 12;
   const offset = (pageNum - 1) * limitNum;
 
   let values: QueryValue[] = [];
@@ -84,8 +104,13 @@ export const findAll = async ({
     values.push(`${payment_status}`);
   }
 
+  if (event_title) {
+    conditions.push(`"e"."title" ILIKE $${values.length + 1}`);
+    values.push(`%${event_title}%`);
+  }
+
   if (checked_in !== undefined) {
-    if (checked_in === true) {
+    if (checked_in === true || checked_in === "true") {
       conditions.push(`"o"."checked_in_at" IS NOT NULL`);
     } else {
       conditions.push(`"o"."checked_in_at" IS NULL`);
@@ -228,17 +253,28 @@ export const findDetails = async (uuid: string): Promise<IOrderDetail[]> => {
   return result.rows;
 };
 
+export const findOrderOwner = async (
+  uuid: string,
+): Promise<{ user_uuid: string | null } | undefined> => {
+  const result = await db.query<{ user_uuid: string | null }>(
+    `SELECT "user_uuid" FROM "orders" WHERE "uuid" = $1`,
+    [uuid],
+  );
+  return result.rows[0];
+};
+
 export const findLastOrderNumber = async (
   prefix: string,
+  executor: PoolClient | Pool = db,
 ): Promise<string | null> => {
   const today = dayjs().format("YYMMDD");
 
-  const result = await db.query<Pick<IOrders, "order_number">>(
+  const result = await executor.query<Pick<IOrders, "order_number">>(
     `
       SELECT order_number
       FROM orders
       WHERE order_number LIKE $1
-      ORDER BY order_number DESC
+      ORDER BY length(order_number) DESC, order_number DESC
       LIMIT 1
     `,
     [`${prefix}${today}%`],
@@ -299,6 +335,13 @@ export const checkIn = async (
       "checked_in_by" = $2,
       "updated_at" = NOW()
     WHERE "uuid" = $1
+      AND "checked_in_at" IS NULL
+      AND EXISTS (
+        SELECT 1
+        FROM "payments" "p"
+        WHERE "p"."order_uuid" = "orders"."uuid"
+          AND "p"."status" = 'paid'
+      )
     RETURNING *;
   `;
 

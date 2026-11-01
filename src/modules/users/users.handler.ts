@@ -44,6 +44,14 @@ export const getDetailUser = async (
     throw new AppError("NO_ID", "UUID must be provided", 400);
   }
 
+  const userPayload = req.userPayload;
+  if (!userPayload) {
+    throw new AppError("UNAUTHORIZED", "User not authenticated", 401);
+  }
+  if (userPayload.role !== "admin" && userPayload.uuid !== uuid) {
+    throw new AppError("FORBIDDEN", "You can only view your own profile", 403);
+  }
+
   const user = await findDetails(uuid as string);
   if (user.length === 0) {
     throw new AppError("NO_DATA", "No Data Found", 404);
@@ -60,7 +68,7 @@ export const createUsers = async (
   res: Response<IUserResponse>,
 ) => {
   const { password } = req.body;
-  if (!req.body.first_name || !req.body.email) {
+  if (!req.body.first_name || !req.body.email || !password) {
     const missingFields: string[] = [];
     if (!req.body.first_name) missingFields.push("first_name");
     if (!req.body.email) missingFields.push("email");
@@ -87,19 +95,37 @@ export const createUsers = async (
 };
 
 export const updateUsers = async (
-  req: Request<{ uuid: string }, {}, IUserBody>,
+  req: Request<{ uuid: string }, {}, Partial<IUserBody>>,
   res: Response<IUserResponse>,
 ): Promise<Response> => {
-  const {
-    params: { uuid },
-    body: { password },
-  } = req;
+  const { uuid } = req.params;
+  const userPayload = req.userPayload;
+  if (!userPayload) {
+    throw new AppError("UNAUTHORIZED", "User not authenticated", 401);
+  }
+  const isAdmin = userPayload.role === "admin";
+  if (!isAdmin && userPayload.uuid !== uuid) {
+    throw new AppError("FORBIDDEN", "You can only update your own profile", 403);
+  }
 
-  const data: Partial<IUserBody> = { ...req.body };
+  const allowedFields: (keyof IUserBody)[] = isAdmin
+    ? ["first_name", "last_name", "email", "password", "provider", "provider_id", "role"]
+    : ["first_name", "last_name", "email", "password"];
+  const data: Partial<IUserBody> = {};
+  for (const field of allowedFields) {
+    const value = req.body[field];
+    if (value !== undefined) {
+      Object.assign(data, { [field]: value });
+    }
+  }
 
-  if (password) {
+  if (!Object.keys(data).length) {
+    throw new AppError("MISSING_FIELD", "No supported fields to update", 400);
+  }
+
+  if (data.password) {
     const salt = await bcrypt.genSalt();
-    const hashed = await bcrypt.hash(password, salt);
+    const hashed = await bcrypt.hash(data.password, salt);
     data.password = hashed;
   }
 

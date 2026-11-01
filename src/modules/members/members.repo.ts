@@ -12,7 +12,7 @@ export const findAll = async ({
     is_active,
 }: IMemberQueryParams): Promise<IMembers[]> => {
     let values: QueryValue[] = [];
-    let conditions: string[] = [];
+    let conditions: string[] = ['"m"."is_active" = true'];
     let whereQuery: string = "";
 
     if (idol_group_uuid) {
@@ -85,6 +85,7 @@ export const findDetails = async (uuid: string): Promise<IMembers[]> => {
         FROM "members" AS "m"
         LEFT JOIN "idol_groups" AS "ig" ON "m"."idol_group_uuid" = "ig"."uuid"
         WHERE "m"."uuid" = $1
+          AND "m"."is_active" = true
     `;
     const values: QueryValue[] = [uuid];
     const result: QueryResult<IMembers> = await db.query(query, values);
@@ -134,7 +135,10 @@ export const update = async (uuid: string, data: Partial<IMemberBody>): Promise<
 
 export const remove = async (uuid: string): Promise<IMembers[]> => {
     const query = `
-        DELETE FROM "members"
+        UPDATE "members"
+        SET "is_active" = false,
+            "deleted_at" = NOW(),
+            "updated_at" = NOW()
         WHERE "uuid" = $1
         RETURNING *
     `;

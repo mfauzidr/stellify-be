@@ -2,18 +2,24 @@ import { QueryResult } from "pg";
 import db from "../../shared/config/pg";
 import { IUser, IUserBody } from "../../modules/users/users.model";
 
-export const getEmail = async (email: string): Promise<IUser> => {
+export const getEmail = async (
+  email: string,
+): Promise<(IUser & { password: string }) | undefined> => {
   const query = `
     SELECT
       "id",
       "uuid",
       "email",
       "password",
-      "role"
+      "role",
+      "is_active"
     FROM "users"
     WHERE "email" = $1`;
   const values: string[] = [email];
-  const { rows }: QueryResult<IUser> = await db.query(query, values);
+  const { rows }: QueryResult<IUser & { password: string }> = await db.query(
+    query,
+    values,
+  );
   return rows[0];
 };
 

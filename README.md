@@ -136,7 +136,7 @@ Orders are the main transactional flow for event booking.
 Implemented behavior:
 
 - `GET /orders` returns all orders; regular users only see their own orders.
-- `GET /orders/:uuid` returns details for a single order.
+- `GET /orders/:uuid` returns details for a single order; regular users can only access their own orders.
 - `POST /orders` creates an order with validation for event timing, pricing, member selection, and payment method compatibility.
 - Orders are created with a generated order number and linked payment record.
 - `PATCH /orders/:uuid/check-in` marks an order as checked in after payment is verified.
@@ -149,6 +149,7 @@ Order creation rules implemented in the service layer:
 - quantities must be positive
 - at least one member must be selected
 - duplicate member UUIDs are rejected
+- orders require a published, active event/package and active members assigned to that event
 - single-member package validation follows `allow_single`
 - group package validation follows `allow_group`
 - price is computed based on the order phase and package pricing fields
@@ -164,6 +165,9 @@ Implemented behavior:
 - Midtrans notification is processed at `POST /payments/midtrans/notification` and validated by signature.
 - Admins can synchronize payment status, cancel a Midtrans payment, or expire a payment.
 - Manual payment status updates are allowed only for `paid` and `cancelled`.
+- Manual status updates are restricted to manual-provider payments.
+- Midtrans `capture` is treated as paid only when its fraud status is accepted; payment status updates do not regress a paid payment.
+- Snap is requested after the local order transaction commits so provider network calls do not hold a database transaction open.
 
 ### Check-in
 
@@ -173,6 +177,7 @@ Implemented behavior:
 
 - A payment must be in `paid` status before check-in is allowed.
 - An order can be checked in only once.
+- Check-in is conditional on the order still being unchecked and having a paid payment, preventing concurrent duplicate check-ins.
 - `checked_in_at` is updated when the admin calls the check-in route.
 
 ### Dashboard
@@ -192,6 +197,8 @@ The dashboard metrics are computed directly from PostgreSQL queries in the repos
 ## 6. Database
 
 The backend uses PostgreSQL with a `pg` Pool connection configured from environment variables.
+
+The migration `20260808000000_add_payment_type_to_payments.ts` adds the `payments.payment_type` field used by Midtrans notification and synchronization. Apply pending migrations before deploying this source version.
 
 Core persisted domains currently used by the codebase include:
 

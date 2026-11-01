@@ -28,7 +28,7 @@ export interface IPaymentBody extends IMidtransPaymentFields {
   gross_amount: number;
   status?: PaymentStatus;
   raw_response?: IMidtransNotificationBody;
-  payment_type?:string
+  payment_type?: string;
 }
 
 export interface IPayment extends IPaymentBody {

@@ -1,6 +1,6 @@
 import { AppError } from "src/shared/helper/appError";
-import { findByUuid, update } from "./payments.repo";
-import { IPaymentBody, IUpdateManualPaymentBody } from "./payments.model";
+import { findByUuid, updatePendingManual } from "./payments.repo";
+import { IUpdateManualPaymentBody } from "./payments.model";
 
 export const updateManualPaymentService = async (
   uuid: string,
@@ -14,6 +14,14 @@ export const updateManualPaymentService = async (
 
   const currentPayment = payment[0];
 
+  if (currentPayment.provider !== "manual") {
+    throw new AppError(
+      "INVALID_PROVIDER",
+      "Manual status updates are only allowed for manual payments",
+      400,
+    );
+  }
+
   if (currentPayment.status !== "pending") {
     throw new AppError(
       "INVALID_PAYMENT_STATUS",
@@ -22,13 +30,14 @@ export const updateManualPaymentService = async (
     );
   }
 
-  const updatedPayment = await update(uuid, {
-    ...body,
-    paid_at: body.status === "paid" ? new Date() : undefined,
-  });
+  const updatedPayment = await updatePendingManual(uuid, body.status);
 
   if (updatedPayment.length < 1) {
-    throw new AppError("NO_DATA", "Payment not found", 404);
+    throw new AppError(
+      "INVALID_PAYMENT_STATUS",
+      "Payment status changed before the update could be applied",
+      400,
+    );
   }
 
   return updatedPayment;

@@ -4,6 +4,7 @@ import jwt, { SignOptions, VerifyOptions } from "jsonwebtoken";
 import { AppParams } from "../../src/shared/models/params.model";
 import { IAuthResponse } from "../../src/shared/models/response.model";
 import { IPayload } from "../../src/shared/models/payload.model";
+import { findAuthUser } from "src/modules/users/users.repo";
 
 export const jwtSignOptions: SignOptions = {
   expiresIn: "60m",
@@ -16,7 +17,7 @@ export const jwtVerifyOptions: VerifyOptions = {
 
 export const authMiddleware =
   (roles: string[] = []) =>
-  (
+  async (
     req: Request<AppParams>,
     res: Response<IAuthResponse>,
     next: NextFunction,
@@ -32,36 +33,56 @@ export const authMiddleware =
 
     const token = bearerToken.split(" ")[1];
 
-    jwt.verify(
-      token,
-      process.env.JWT_SECRET as string,
-      jwtVerifyOptions,
-      (err, decoded) => {
-        if (err) {
-          return res.status(401).json({
-            message: err.message,
-            err: err.name,
-          });
-        }
+    let decoded: jwt.JwtPayload;
+    try {
+      const verified = jwt.verify(
+        token,
+        process.env.JWT_SECRET as string,
+        { ...jwtVerifyOptions, complete: false },
+      );
+      if (typeof verified === "string") {
+        return res.status(401).json({
+          message: "Invalid token payload",
+          err: "JsonWebTokenError",
+        });
+      }
+      decoded = verified;
+    } catch (error) {
+      const err = error as Error;
+      return res.status(401).json({
+        message: err.message,
+        err: err.name,
+      });
+    }
 
-        const payload = decoded as IPayload;
+    if (
+      typeof decoded.uuid !== "string" ||
+      typeof decoded.id !== "number" ||
+      typeof decoded.role !== "string"
+    ) {
+      return res.status(401).json({
+        message: "Invalid token payload",
+        err: "JsonWebTokenError",
+      });
+    }
 
-        if (roles.length && !roles.includes(payload.role)) {
-          return res.status(403).json({
-            message: "Forbidden",
-            err: "Forbidden Access",
-          });
-        }
+    const user = await findAuthUser(decoded.uuid);
+    if (!user?.is_active) {
+      return res.status(401).json({
+        message: "Unauthorized",
+        err: "Account is inactive or no longer exists",
+      });
+    }
 
-        (
-          req as Request<AppParams> & {
-            userPayload: IPayload;
-          }
-        ).userPayload = payload;
+    if (roles.length && !roles.includes(user.role)) {
+      return res.status(403).json({
+        message: "Forbidden",
+        err: "Forbidden Access",
+      });
+    }
 
-        next();
-      },
-    );
+    req.userPayload = { id: decoded.id, uuid: user.uuid, role: user.role };
+    return next();
   };
 
 export const optionalAuthMiddleware = (
@@ -77,24 +98,35 @@ export const optionalAuthMiddleware = (
 
   const token = bearer.replace("Bearer ", "");
 
-  jwt.verify(
-    token,
-    process.env.JWT_SECRET as string,
-    jwtVerifyOptions,
-    (err, decoded) => {
-      if (err || !decoded) {
-        return next();
-      }
-
-      (
-        req as Request & {
-          userPayload: IPayload;
-        }
-      ).userPayload = decoded as IPayload;
-
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string,
+      { ...jwtVerifyOptions, complete: false },
+    );
+    if (
+      typeof decoded === "string" ||
+      typeof decoded.uuid !== "string" ||
+      typeof decoded.id !== "number" ||
+      typeof decoded.role !== "string"
+    ) {
       return next();
-    },
-  );
+    }
+    void findAuthUser(decoded.uuid)
+      .then((user) => {
+        if (user?.is_active) {
+          req.userPayload = {
+            id: decoded.id,
+            uuid: user.uuid,
+            role: user.role,
+          };
+        }
+        return next();
+      })
+      .catch(next);
+  } catch {
+    return next();
+  }
 };
 
 export const redirectIfAuthenticated = (

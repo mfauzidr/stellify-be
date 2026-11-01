@@ -11,7 +11,7 @@ export const findAll = async (): Promise<IIdolGroups[]> => {
 };
 
 export const findByUuid = async (uuid: string): Promise<IIdolGroups[]> => {
-  const query = `SELECT * FROM "idol_groups" WHERE uuid = $1`;
+  const query = `SELECT * FROM "idol_groups" WHERE uuid = $1 AND "is_active" = true`;
   const result: QueryResult<IIdolGroups> = await db.query(query, [uuid]);
   return result.rows;
 };
@@ -63,7 +63,10 @@ export const update = async (
 
 export const remove = async (uuid: string): Promise<IIdolGroups[]> => {
   const query = `
-        DELETE FROM "idol_groups"
+        UPDATE "idol_groups"
+        SET "is_active" = false,
+            "deleted_at" = NOW(),
+            "updated_at" = NOW()
         WHERE uuid = $1
         RETURNING *
     `;

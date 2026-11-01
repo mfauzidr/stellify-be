@@ -15,7 +15,7 @@ export const findChekiEvent = async (uuid: string) => {
       throw new AppError("EVENT_NOT_FOUND", "Event not found", 404);
     }
 
-    const packages = await chekiPackagesRepo.findByEventUuid(uuid, client);
+    const packages = await chekiPackagesRepo.findByEventUuid(uuid, client, true);
 
     return {
       event,
@@ -79,7 +79,7 @@ export const updateChekiEventService = async (
   try {
     await client.query("BEGIN");
 
-    const [existingEvent] = await eventsRepo.findByUuid(uuid, client);
+    const [existingEvent] = await eventsRepo.findByUuid(uuid, client, true);
 
     if (!existingEvent) {
       throw new AppError("EVENT_NOT_FOUND", "Event not found", 404);
